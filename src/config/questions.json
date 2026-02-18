@@ -1,0 +1,48 @@
+{
+  "questions": [
+    {
+      "id": "intent",
+      "type": "single-choice",
+      "question": "What was your primary intent with this annotation?",
+      "options": [
+        { "value": "highlight", "label": "Highlight a specific data point" },
+        { "value": "trend", "label": "Show a trend or pattern" },
+        { "value": "compare", "label": "Compare values" },
+        { "value": "region", "label": "Mark a region of interest" },
+        { "value": "other", "label": "Other" }
+      ],
+      "required": true
+    },
+    {
+      "id": "confidence",
+      "type": "likert",
+      "question": "How confident are you that your annotation clearly explains the caption?",
+      "scale": 7,
+      "anchors": {
+        "low": "Not confident at all",
+        "high": "Extremely confident"
+      },
+      "required": true
+    },
+    {
+      "id": "difficulty",
+      "type": "likert",
+      "question": "How difficult was it to create this annotation?",
+      "scale": 5,
+      "anchors": {
+        "low": "Very easy",
+        "high": "Very difficult"
+      },
+      "required": true
+    },
+    {
+      "id": "explanation",
+      "type": "text",
+      "question": "Briefly explain your annotation strategy (optional):",
+      "placeholder": "Describe what you drew and why...",
+      "required": false,
+      "maxLength": 500
+    }
+  ]
+}
+

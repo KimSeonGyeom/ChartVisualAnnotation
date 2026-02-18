@@ -1,0 +1,44 @@
+{
+  "stimuli": [
+    {
+      "id": "trial_1",
+      "imageUrl": "/images/chart_example_1.png",
+      "caption": "Sales increased dramatically in Q4 2024.",
+      "order": 1,
+      "isAttentionCheck": false
+    },
+    {
+      "id": "trial_2",
+      "imageUrl": "/images/chart_example_2.png",
+      "caption": "The temperature peaked in July before declining.",
+      "order": 2,
+      "isAttentionCheck": false
+    },
+    {
+      "id": "attention_trial",
+      "imageUrl": "/images/attention_check_chart.png",
+      "caption": "ATTENTION: Please draw a circle around the TITLE of this chart only.",
+      "order": 3,
+      "isAttentionCheck": true,
+      "expectedRegion": {
+        "description": "Chart title area at the top",
+        "x": 150,
+        "y": 10,
+        "width": 300,
+        "height": 50
+      }
+    },
+    {
+      "id": "trial_3",
+      "imageUrl": "/images/chart_example_3.png",
+      "caption": "There is a notable difference between Group A and Group B.",
+      "order": 4,
+      "isAttentionCheck": false
+    }
+  ],
+  "settings": {
+    "randomize": true,
+    "randomizeExclude": ["attention_trial"],
+    "practiceTrials": 0
+  }
+}

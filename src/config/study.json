@@ -1,0 +1,28 @@
+{
+  "title": "Visual Annotation Study",
+  "description": "In this study, you will view charts with captions and draw visual annotations to explain the given caption on top of the chart.",
+  "prolificCompletionUrl": "https://app.prolific.com/submissions/complete?cc=XXXXXXXX",
+  "estimatedMinutes": 15,
+  
+  "consent": {
+    "title": "Research Consent Form",
+    "content": [
+      "This research aims to understand how people visually annotate charts to communicate data insights.",
+      "Your responses will be collected anonymously and used solely for research purposes.",
+      "Participation is voluntary, and you may withdraw at any time without penalty.",
+      "The estimated completion time is approximately 15 minutes."
+    ]
+  },
+
+  "features": {
+    "allowPenCustomization": true,
+    "penDefaults": {
+      "color": "#e63946",
+      "width": 3
+    },
+    "penOptions": {
+      "colors": ["#e63946", "#1d3557", "#2a9d8f", "#f4a261", "#000000"],
+      "widths": [2, 3, 5, 8]
+    }
+  }
+}
