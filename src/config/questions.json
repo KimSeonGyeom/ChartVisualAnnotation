@@ -14,26 +14,12 @@
       "required": true
     },
     {
-      "id": "confidence",
-      "type": "likert",
-      "question": "How confident are you that your annotation clearly explains the caption?",
-      "scale": 7,
-      "anchors": {
-        "low": "Not confident at all",
-        "high": "Extremely confident"
-      },
-      "required": true
-    },
-    {
-      "id": "difficulty",
-      "type": "likert",
-      "question": "How difficult was it to create this annotation?",
-      "scale": 5,
-      "anchors": {
-        "low": "Very easy",
-        "high": "Very difficult"
-      },
-      "required": true
+      "id": "targetData",
+      "type": "text",
+      "question": "What data in the chart did you target with your annotation?",
+      "placeholder": "Describe the specific data points, values, or regions you annotated...",
+      "required": true,
+      "maxLength": 500
     },
     {
       "id": "explanation",
@@ -45,4 +31,3 @@
     }
   ]
 }
-

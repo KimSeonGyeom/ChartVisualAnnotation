@@ -1,17 +1,40 @@
 import { create } from 'zustand';
 
 export const useDrawingStore = create((set, get) => ({
-  // ==================== CONFIG STATE ====================
+  // ==================== TOOL STATE ====================
+  activeTool: 'pen', // 'pen' | 'arrow' | 'hline' | 'vline' | 'bbox' | 'highlight' | 'bracket'
+  
+  // ==================== CONFIG ====================
   config: {
-    tool: 'pen',
-    color: '#e63946',
+    color: '#000000',
     width: 3,
   },
   allowCustomization: true,
   
+  // ==================== TOOL OPTIONS ====================
+  toolOptions: {
+    lineStyle: 'solid', // 'solid' | 'dashed'
+    arrowDirection: 'single', // 'single' | 'double'
+    arrowShape: 'straight', // 'straight' | 'curved'
+  },
+  
   // ==================== ACTIVITY LOG STATE ====================
   activities: [],
   trialStartTime: null,
+
+  // ==================== ACTIONS: TOOL ====================
+  
+  setActiveTool: (tool) => {
+    get().logActivity('tool_change', { newTool: tool });
+    set({ activeTool: tool });
+  },
+  
+  setToolOption: (key, value) => {
+    get().logActivity('tool_option_change', { option: key, newValue: value });
+    set((state) => ({
+      toolOptions: { ...state.toolOptions, [key]: value },
+    }));
+  },
 
   // ==================== ACTIONS: CONFIG ====================
 
@@ -20,8 +43,7 @@ export const useDrawingStore = create((set, get) => ({
     set({
       allowCustomization: features?.allowPenCustomization ?? true,
       config: {
-        tool: 'pen',
-        color: features?.penDefaults?.color || '#e63946',
+        color: features?.penDefaults?.color || '#000000',
         width: features?.penDefaults?.width || 3,
       },
     });
@@ -55,20 +77,32 @@ export const useDrawingStore = create((set, get) => ({
     set({
       activities: [],
       trialStartTime: Date.now(),
+      activeTool: 'pen',
+      toolOptions: {
+        lineStyle: 'solid',
+        arrowDirection: 'single',
+        arrowShape: 'straight',
+      },
     });
   },
 
   // ==================== ACTIONS: ACTIVITY LOGGING ====================
 
   logActivity: (type, data = {}) => {
-    const { trialStartTime, config } = get();
+    const { trialStartTime, config, activeTool, toolOptions } = get();
     const now = Date.now();
 
     const activity = {
       type,
       timestamp: now,
       relativeTime: trialStartTime ? now - trialStartTime : 0,
-      data: { ...data, color: config.color, width: config.width },
+      data: { 
+        ...data, 
+        color: config.color, 
+        width: config.width,
+        activeTool,
+        toolOptions: activeTool !== 'pen' ? toolOptions : null,
+      },
     };
 
     set((state) => ({
@@ -82,6 +116,10 @@ export const useDrawingStore = create((set, get) => ({
 
   onStrokeEnd: (pathLength = 0, pointCount = 0) => {
     get().logActivity('stroke_end', { pathLength, pointCount });
+  },
+  
+  onShapeCreated: (shapeType, shapeData = {}) => {
+    get().logActivity('shape_created', { shapeType, ...shapeData });
   },
 
   onUndo: () => {
@@ -99,33 +137,43 @@ export const useDrawingStore = create((set, get) => ({
   getStats: () => {
     const { trialStartTime, activities } = get();
     
-    // Calculate from activities
     let strokeCount = 0;
     let totalPathLength = 0;
+    let shapeCount = 0;
     
     for (const activity of activities) {
       if (activity.type === 'stroke_end') {
         strokeCount++;
         totalPathLength += activity.data?.pathLength || 0;
+      } else if (activity.type === 'shape_created') {
+        shapeCount++;
       } else if (activity.type === 'undo' && strokeCount > 0) {
         strokeCount--;
       } else if (activity.type === 'clear') {
         strokeCount = 0;
         totalPathLength = 0;
+        shapeCount = 0;
       }
     }
 
     return {
       strokeCount,
       totalPathLength,
+      shapeCount,
       trialDurationMs: trialStartTime ? Date.now() - trialStartTime : 0,
     };
   },
 
   reset: () => {
     set({
-      config: { tool: 'pen', color: '#e63946', width: 3 },
+      activeTool: 'pen',
+      config: { color: '#000000', width: 3 },
       allowCustomization: true,
+      toolOptions: {
+        lineStyle: 'solid',
+        arrowDirection: 'single',
+        arrowShape: 'straight',
+      },
       activities: [],
       trialStartTime: null,
     });

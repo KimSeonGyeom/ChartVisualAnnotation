@@ -17,11 +17,11 @@
   "features": {
     "allowPenCustomization": true,
     "penDefaults": {
-      "color": "#e63946",
+      "color": "#000000",
       "width": 3
     },
     "penOptions": {
-      "colors": ["#e63946", "#1d3557", "#2a9d8f", "#f4a261", "#000000"],
+      "colors": ["#000000", "#e63946", "#1d3557"],
       "widths": [2, 3, 5, 8]
     }
   }

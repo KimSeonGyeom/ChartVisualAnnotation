@@ -83,13 +83,89 @@
 }
 
 /* Pen Toolbar */
-.pen-toolbar {
+.pen-toolbar-wrapper {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 0.5rem 0;
   margin-bottom: 0.5rem;
   border-bottom: 1px solid #eee;
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.toolbar-row-main {
+  justify-content: space-between;
+}
+
+.toolbar-row-options {
+  flex-wrap: wrap;
+}
+
+/* Tool Options */
+.tool-options {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tool-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #666;
+  transition: all 0.15s;
+}
+
+.tool-btn.active {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
+.tool-btn:hover:not(.active) {
+  border-color: #111;
+  color: #111;
+}
+
+/* Option Buttons */
+.option-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.option-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #666;
+  transition: all 0.15s;
+}
+
+.option-btn.active {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
+.option-btn:hover:not(.active) {
+  border-color: #111;
+  color: #111;
 }
 
 .toolbar-section {
@@ -209,7 +285,7 @@
 .caption-display p {
   font-size: 1.1rem;
   color: #111;
-  line-height: 1.6;
+  line-height: 1.2;
 }
 
 /* Questions - Scrollable */
@@ -242,7 +318,7 @@
   font-size: 1rem;
   color: #111;
   margin-bottom: 0.75rem;
-  line-height: 1.4;
+  line-height: 1.2;
 }
 
 .required {
