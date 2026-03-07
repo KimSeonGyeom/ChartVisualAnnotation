@@ -282,10 +282,21 @@
   margin-bottom: 0.75rem;
 }
 
-.caption-display p {
-  font-size: 1.1rem;
+.caption-paragraph {
+  font-size: 1rem;
+  line-height: 1.8;
+  margin: 0;
+}
+
+.caption-sentence {
+  color: #aaa;
+}
+
+.caption-sentence--highlight {
   color: #111;
-  line-height: 1.2;
+  font-weight: 600;
+  background: #fff9c4;
+  padding: 0.1rem 0.25rem;
 }
 
 /* Questions - Scrollable */

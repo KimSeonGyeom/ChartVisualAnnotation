@@ -17,7 +17,7 @@ export default function IntroductionPage() {
   const { 
     initializeSession, 
     setConsent, 
-    loadChartData,
+    loadSuneungData,
     assignSet,
   } = useStudyStore();
 
@@ -29,12 +29,12 @@ export default function IntroductionPage() {
     }
   }, [searchParams]);
 
-  // Load chart data on mount
+  // Load suneung data on mount
   useEffect(() => {
-    loadChartData().catch(err => {
-      console.error('Failed to load chart data:', err);
+    loadSuneungData().catch(err => {
+      console.error('Failed to load suneung data:', err);
     });
-  }, [loadChartData]);
+  }, [loadSuneungData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

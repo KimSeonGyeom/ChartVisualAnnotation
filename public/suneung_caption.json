@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "filename": "suneung1.png",
+    "captions": [
+      "In 2015 and 2017, Mozart was the most performed composer, with more than 3,000 performances each year.",
+      "For all three years, the least performed composer was Schubert, whose music was performed less than 2,000 times each year.",
+      "As for the two composers, Bach and Schubert, the number of performances steadily increased from 2015 to 2017.",
+      "The gap in the number of performances between Beethoven and Bach was the largest in 2016 and the smallest in 2017."
+    ]
+  },
+  {
+    "id": 2,
+    "filename": "suneung2.png",
+    "captions": [
+      "The percentage of people in the 18-29 group who said they had read a print book was 74%, which was the highest among the four groups.",
+      "While 34% of people in the 18-29 group said they had read an e-book, the percentage of people who said so was below 20% in the 65 and up group.",
+      "In all age groups, the percentage of people who said they had read an e-book was higher than that of people who said they had listened to an audiobook.",
+      "Among the four age groups, the 30-49 group had the highest percentage of people who said they had listened to an audiobook."
+    ]
+  },
+  {
+    "id": 3,
+    "filename": "suneung3.png",
+    "captions": [
+      "It is projected that the share of the global middle class in Asia Pacific will increase from 46 percent in 2015 to 60 percent in 2025.",
+      "The projected share of Asia Pacific in 2025, the largest among the six regions, is more than three times that of Europe in the same year.",
+      "The shares of Europe and North America are both projected to decrease, from 24 percent in 2015 to 16 percent in 2025 for Europe, and from 11 percent in 2015 to 8 percent in 2025 for North America.",
+      "In 2025, the share of the Middle East and North Africa will be larger than that of sub-Saharan Africa, as it was in 2015."
+    ]
+  },
+  {
+    "id": 4,
+    "filename": "suneung4.png",
+    "captions": [
+      "For each country, its online share of retail sales in 2019 was larger than that in 2012.",
+      "Among the six countries, the UK owned the largest online share of retail sales with 19.7% in 2019.",
+      "In 2019, the U.S. had the second largest online share of retail sales with 16.5%.",
+      "In 2012, the online share of retail sales in the Netherlands was larger than that in France, whereas the reverse was true in 2019."
+    ]
+  },
+  {
+    "id": 5,
+    "filename": "suneung5.png",
+    "captions": [
+      "In each age group, males had higher average kilocalorie intake from sugar-sweetened beverages than females did.",
+      "Among the male groups, the group aged 20-39 had the highest average kilocalorie intake from sugar-sweetened beverages.",
+      "Among the female groups, the group aged 12-19 had the highest average kilocalorie intake from sugar-sweetened beverages, followed by the group aged 20-39.",
+      "Among the male groups, the group aged 2-5 had the lowest average kilocalorie intake from sugar-sweetened beverages."
+    ]
+  },
+  {
+    "id": 6,
+    "filename": "suneung6.png",
+    "captions": [
+      "The United States had lower percentages of \"Recycling or composting\" and \"Energy from waste,\" and a higher percentage of \"Landfilled\" than the five European nations.",
+      "Burying solid waste in landfills was the most commonly used solid waste management technique in the United States, accounting for 69 percent of total solid waste disposal.",
+      "On the other hand, \"Landfilled\" took up zero (or statistically insignificant) percent in Germany, the Netherlands and Austria, and just 1 percent in Belgium and Sweden respectively.",
+      "The United States recycled or composted about a quarter of its total solid waste, but Sweden recycled or composted half of its total solid waste."
+    ]
+  },
+  {
+    "id": 7,
+    "filename": "suneung7.png",
+    "captions": [
+      "Although its share was less than 50% in each of the three years, the group of university graduates aged 22 to 24 accounted for the largest single share in those respective years.",
+      "The second largest single share of university graduates in each of the three years was held by those who were 25 to 29 years old.",
+      "The share of university graduates who were 30 years old and over was higher than 20% in each of the three years.",
+      "In 1996, the share of the group of university graduates aged 18 to 21 was 7.7%, and the share of the same age group was 6% in 2001."
+    ]
+  },
+  {
+    "id": 8,
+    "filename": "suneung8.png",
+    "captions": [
+      "All of the six countries have more multipurpose industrial robots per 10,000 employees in automotive industries than in all other industries.",
+      "Among the countries in the graph, Japan has the largest number of multipurpose industrial robots per 10,000 employees in automotive industries.",
+      "Both the USA and the United Kingdom have more than 600 units of multipurpose industrial robots per 10,000 employees in automotive industries but have fewer than 200 units in all other industries.",
+      "Among the six countries in the graph, Japan, Italy, and Germany are the top three countries for the number of multipurpose industrial robots per 10,000 employees in automotive industries."
+    ]
+  },
+  {
+    "id": 9,
+    "filename": "suneung9.png",
+    "captions": [
+      "For each of the three years, the percentage of women employed as producers on the top 100 U.S. films was the highest as compared with the percentages of each of the other three roles.",
+      "The percentage of women employed as directors on the top 100 U.S. films in 2021 was lower than in 2020 but higher than in 2022.",
+      "The percentage of women employed as writers on the top 100 U.S. films increased by 4 percentage points from 2020 to 2021 and by 1 percentage point from 2021 to 2022.",
+      "In 2022, the percentage of women employed as producers on the top 100 U.S. films was the same as that in 2020."
+    ]
+  },
+  {
+    "id": 10,
+    "filename": "suneung10.png",
+    "captions": [
+      "The year 2012 saw an overall percentage increase in each category of posted personal information.",
+      "In both years, the percentage of the young Americans who posted photos of themselves was the highest of all the categories.",
+      "In 2006, the percentage of those who posted city or town names was higher than that of those who posted school names.",
+      "Compared to 2006, 2012 recorded an eighteen percent increase in the category of cell phone numbers."
+    ]
+  }
+]

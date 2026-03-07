@@ -23,14 +23,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Set definitions (sliding window)
+// Set definitions
 const sets = [
-  { id: "set_0", indices: [1, 2, 3, 4, 5] },
-  { id: "set_1", indices: [2, 3, 4, 5, 6] },
-  { id: "set_2", indices: [3, 4, 5, 6, 7] },
-  { id: "set_3", indices: [4, 5, 6, 7, 8] },
-  { id: "set_4", indices: [5, 6, 7, 8, 9] },
-  { id: "set_5", indices: [6, 7, 8, 9, 10] },
+  { id: "suneung_set_0", type: "suneung", captionIndex: 0, indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+  { id: "suneung_set_1", type: "suneung", captionIndex: 1, indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+  { id: "suneung_set_2", type: "suneung", captionIndex: 2, indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+  { id: "suneung_set_3", type: "suneung", captionIndex: 3, indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
 ];
 
 async function initSets() {
@@ -38,14 +36,16 @@ async function initSets() {
 
   for (const set of sets) {
     await setDoc(doc(db, "sets", set.id), {
+      type: set.type,
+      captionIndex: set.captionIndex,
       indices: set.indices,
-      status: "none",  // none | collecting | collected
-      assignedTo: null,
-      assignedAt: null,
-      completedAt: null,
     });
     console.log(`  Created: ${set.id}`);
   }
+
+  // Initialize assignment counter (set to 0 only if it doesn't exist)
+  await setDoc(doc(db, "config", "assignment_counter"), { count: 0 }, { merge: false });
+  console.log("  Created: config/assignment_counter (count: 0)");
 
   console.log("\n✅ Done! Sets initialized in Firebase.");
   process.exit(0);

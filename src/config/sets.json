@@ -1,16 +1,13 @@
 {
   "sets": [
-    { "id": "set_0", "indices": [1, 2, 3, 4, 5] },
-    { "id": "set_1", "indices": [2, 3, 4, 5, 6] },
-    { "id": "set_2", "indices": [3, 4, 5, 6, 7] },
-    { "id": "set_3", "indices": [4, 5, 6, 7, 8] },
-    { "id": "set_4", "indices": [5, 6, 7, 8, 9] },
-    { "id": "set_5", "indices": [6, 7, 8, 9, 10] }
+    { "id": "suneung_set_0", "type": "suneung", "captionIndex": 0, "indices": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+    { "id": "suneung_set_1", "type": "suneung", "captionIndex": 1, "indices": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+    { "id": "suneung_set_2", "type": "suneung", "captionIndex": 2, "indices": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+    { "id": "suneung_set_3", "type": "suneung", "captionIndex": 3, "indices": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }
   ],
   "config": {
-    "imagesPerSet": 5,
-    "totalImages": 10,
-    "slidingWindowStep": 1
+    "imagesPerSet": 10,
+    "totalImages": 10
   }
 }
 
