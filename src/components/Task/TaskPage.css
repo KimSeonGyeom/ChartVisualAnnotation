@@ -282,10 +282,21 @@
   margin-bottom: 0.75rem;
 }
 
-.caption-display p {
-  font-size: 1.1rem;
+.caption-paragraph {
+  font-size: 1rem;
+  line-height: 1.8;
+  margin: 0;
+}
+
+.caption-sentence {
+  color: #aaa;
+}
+
+.caption-sentence--highlight {
   color: #111;
-  line-height: 1.2;
+  font-weight: 600;
+  background: #fff9c4;
+  padding: 0.1rem 0.25rem;
 }
 
 /* Questions - Scrollable */
@@ -294,6 +305,71 @@
   overflow-y: auto;
   padding-right: 0.5rem;
   min-height: 0;
+}
+
+/* Version Tabs */
+.version-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #eee;
+}
+
+.version-tab {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #aaa;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.version-tab:hover:not(:disabled) {
+  color: #111;
+}
+
+.version-tab.active {
+  color: #111;
+  border-bottom-color: #111;
+}
+
+.version-tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Tooltip */
+.radio-label-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.option-tooltip-box {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  background: #333;
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  padding: 6px 10px;
+  border-radius: 4px;
+  width: 220px;
+  white-space: normal;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.radio-label-wrapper:hover .option-tooltip-box {
+  display: block;
 }
 
 .question-panel h3 {
@@ -356,29 +432,9 @@
 /* Likert Scale */
 .likert-scale {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.anchor {
-  font-size: 0.8rem;
-  color: #999;
-  min-width: 55px;
-}
-
-.anchor-low {
-  text-align: right;
-}
-
-.anchor-high {
-  text-align: left;
-}
-
-.likert-options {
-  display: flex;
-  gap: 0.125rem;
-  flex: 1;
+  align-items: flex-start;
   justify-content: center;
+  gap: 0.25rem;
 }
 
 .likert-option {
@@ -386,19 +442,31 @@
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  padding: 0.2rem;
+  padding: 0.2rem 0.4rem;
+  min-width: 52px;
+  flex: 1;
 }
 
 .likert-option input[type="radio"] {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
 }
 
 .likert-value {
   font-size: 0.8rem;
+  color: #555;
+  margin-top: 0.25rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.likert-anchor {
+  font-size: 0.7rem;
   color: #999;
   margin-top: 0.2rem;
+  text-align: center;
+  white-space: nowrap;
 }
 
 /* Text Response */

@@ -17,12 +17,20 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
 
   const tools = [
     { id: 'pen', label: '✎', title: 'Pen' },
+    { id: 'text', label: 'T', title: 'Text' },
     { id: 'arrow', label: '→', title: 'Arrow' },
     { id: 'hline', label: '─', title: 'Horizontal Line' },
     { id: 'vline', label: '│', title: 'Vertical Line' },
     { id: 'bbox', label: '□', title: 'Bounding Box' },
     { id: 'highlight', label: '▒', title: 'Highlight' },
     { id: 'bracket', label: '⎵', title: 'Bracket' },
+  ];
+
+  const fontSizes = [
+    { value: 12, label: 'S' },
+    { value: 18, label: 'M' },
+    { value: 24, label: 'L' },
+    { value: 32, label: 'XL' },
   ];
 
   return (
@@ -82,6 +90,28 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Font Size (only for text tool) */}
+        {activeTool === 'text' && (
+          <>
+            <div className="toolbar-divider" />
+            <div className="toolbar-section">
+              <span className="toolbar-label">Size:</span>
+              <div className="option-buttons">
+                {fontSizes.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    className={`option-btn ${toolOptions.fontSize === value ? 'active' : ''}`}
+                    onClick={() => setToolOption('fontSize', value)}
+                    title={`${value}px`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
         )}
 
         {/* Pen Width (only for pen tool) */}

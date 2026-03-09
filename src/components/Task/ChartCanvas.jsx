@@ -64,11 +64,14 @@ export default function ChartCanvas({
     };
   }, [width, height]);
 
-  // Toggle drawing mode based on active tool
+  // Toggle drawing mode and selection based on active tool
   useEffect(() => {
-    if (fabricRef.current) {
-      fabricRef.current.isDrawingMode = activeTool === 'pen';
-    }
+    if (!fabricRef.current) return;
+    const canvas = fabricRef.current;
+    canvas.isDrawingMode = activeTool === 'pen';
+    // Enable object selection/movement only for text tool
+    canvas.skipTargetFind = activeTool !== 'text';
+    canvas.selection = activeTool === 'text';
   }, [activeTool]);
 
   // Update brush settings when config changes
@@ -267,10 +270,72 @@ export default function ChartCanvas({
     });
   }, [config.color]);
 
+  // History management
+  const saveToHistory = useCallback(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+
+    const json = canvas.toJSON();
+    historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
+    historyRef.current.push(json);
+    historyIndexRef.current = historyRef.current.length - 1;
+  }, []);
+
+  // Handle text tool
+  useEffect(() => {
+    if (!fabricRef.current) return;
+    if (activeTool !== 'text') return;
+
+    const canvas = fabricRef.current;
+
+    const handleMouseDown = (e) => {
+      // If clicking on an existing object, let Fabric handle it (move/select)
+      if (canvas.findTarget(e.e)) return;
+
+      const pointer = canvas.getPointer(e.e);
+      const textObj = new fabric.IText('', {
+        left: pointer.x,
+        top: pointer.y,
+        fontFamily: 'sans-serif',
+        fontSize: toolOptions.fontSize,
+        fill: config.color,
+        selectable: true,
+        evented: true,
+        hasControls: true,
+        hasBorders: true,
+      });
+
+      canvas.add(textObj);
+      canvas.setActiveObject(textObj);
+      textObj.enterEditing();
+      canvas.renderAll();
+    };
+
+    const handleTextEditingExited = (e) => {
+      const textObj = e.target;
+      if (!textObj.text || textObj.text.trim() === '') {
+        canvas.remove(textObj);
+      } else {
+        onShapeCreated('text', { text: textObj.text });
+        saveToHistory();
+      }
+      canvas.renderAll();
+    };
+
+    canvas.on('mouse:down', handleMouseDown);
+    canvas.on('text:editing:exited', handleTextEditingExited);
+
+    return () => {
+      canvas.off('mouse:down', handleMouseDown);
+      canvas.off('text:editing:exited', handleTextEditingExited);
+    };
+  }, [activeTool, config.color, toolOptions.fontSize, onShapeCreated, saveToHistory]);
+
   // Handle shape drawing (non-pen tools)
   useEffect(() => {
     if (!fabricRef.current) return;
     if (activeTool === 'pen') return;
+    if (activeTool === 'text') return;
 
     const canvas = fabricRef.current;
     
@@ -411,16 +476,6 @@ export default function ChartCanvas({
     };
   }, [activeTool, onStrokeStart, onStrokeEnd]);
 
-  // History management
-  const saveToHistory = useCallback(() => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-
-    const json = canvas.toJSON();
-    historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
-    historyRef.current.push(json);
-    historyIndexRef.current = historyRef.current.length - 1;
-  }, []);
 
   const undoAction = useCallback(() => {
     const canvas = fabricRef.current;

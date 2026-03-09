@@ -16,6 +16,7 @@ export const useDrawingStore = create((set, get) => ({
     lineStyle: 'solid', // 'solid' | 'dashed'
     arrowDirection: 'single', // 'single' | 'double'
     arrowShape: 'straight', // 'straight' | 'curved'
+    fontSize: 18, // text tool font size
   },
   
   // ==================== ACTIVITY LOG STATE ====================
@@ -82,6 +83,7 @@ export const useDrawingStore = create((set, get) => ({
         lineStyle: 'solid',
         arrowDirection: 'single',
         arrowShape: 'straight',
+        fontSize: 18,
       },
     });
   },
@@ -173,6 +175,7 @@ export const useDrawingStore = create((set, get) => ({
         lineStyle: 'solid',
         arrowDirection: 'single',
         arrowShape: 'straight',
+        fontSize: 18,
       },
       activities: [],
       trialStartTime: null,

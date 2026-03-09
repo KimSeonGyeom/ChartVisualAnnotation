@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { 
-  collection, doc, setDoc, updateDoc, getDocs, query, where, orderBy, limit, serverTimestamp 
+  doc, setDoc, updateDoc, getDoc, runTransaction, serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
+
+const NUM_SETS = 4; // suneung_set_0 ~ suneung_set_3
 
 export const useStudyStore = create((set, get) => ({
   // ==================== STATE ====================
@@ -14,8 +16,9 @@ export const useStudyStore = create((set, get) => ({
   consentGiven: false,
   
   // Set assignment
-  assignedSet: null,  // { id: "set_0", indices: [1,2,3,4,5] }
+  assignedSet: null,  // { id: "suneung_set_0", type: "suneung", captionIndex: 0, indices: [...] }
   chartData: [],      // Contents from chartcap_data.json
+  suneungData: [],    // Contents from suneung_caption.json
 
   // ==================== ACTIONS: SET ASSIGNMENT ====================
 
@@ -35,33 +38,43 @@ export const useStudyStore = create((set, get) => ({
   },
 
   /**
-   * Find and assign an available set (status="none")
+   * Load suneung caption data from public/suneung_caption.json
+   */
+  loadSuneungData: async () => {
+    try {
+      const response = await fetch('/suneung_caption.json');
+      const data = await response.json();
+      set({ suneungData: data });
+      return data;
+    } catch (error) {
+      console.error('Failed to load suneung data:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Assign a set using a global counter (cycles through set_0 ~ set_3)
    */
   assignSet: async (prolificId) => {
     try {
-      // Query for first available set
-      const setsRef = collection(db, 'sets');
-      const q = query(
-        setsRef,
-        where('status', '==', 'none'),
-        orderBy('__name__'),
-        limit(1)
-      );
-      
-      const snapshot = await getDocs(q);
-      
-      if (snapshot.empty) {
-        throw new Error('No available sets');
-      }
+      const counterRef = doc(db, 'config', 'assignment_counter');
+      let setData;
 
-      const setDoc = snapshot.docs[0];
-      const setData = { id: setDoc.id, ...setDoc.data() };
+      // Atomically increment counter and determine which set to assign
+      await runTransaction(db, async (transaction) => {
+        const counterSnap = await transaction.get(counterRef);
+        const currentCount = counterSnap.exists() ? counterSnap.data().count : 0;
+        const setIndex = currentCount % NUM_SETS;
+        const setId = `suneung_set_${setIndex}`;
 
-      // Mark as collecting
-      await updateDoc(doc(db, 'sets', setDoc.id), {
-        status: 'collecting',
-        assignedTo: prolificId,
-        assignedAt: serverTimestamp(),
+        const setSnap = await transaction.get(doc(db, 'sets', setId));
+        if (!setSnap.exists()) {
+          throw new Error(`Set ${setId} not found in Firestore`);
+        }
+
+        setData = { id: setId, ...setSnap.data() };
+
+        transaction.set(counterRef, { count: currentCount + 1 }, { merge: true });
       });
 
       set({ assignedSet: setData });
@@ -76,38 +89,30 @@ export const useStudyStore = create((set, get) => ({
    * Get stimuli for current set
    */
   getSetStimuli: () => {
-    const { assignedSet, chartData } = get();
-    if (!assignedSet || !chartData.length) return [];
+    const { assignedSet, suneungData } = get();
+    if (!assignedSet || !suneungData.length) return [];
+
+    const captionIdx = assignedSet.captionIndex ?? 0;
 
     return assignedSet.indices.map((index, order) => {
-      const chart = chartData.find(c => c.index === index);
+      const chart = suneungData.find(c => c.id === index);
       return {
         id: `trial_${order + 1}`,
         imageIndex: index,
-        imageUrl: `/images/chart_${index}.png`,
-        caption: chart?.caption || '',
-        chartInfo: chart?.chart_info || '',
+        imageUrl: `/suneung_images/suneung${index}.png`,
+        caption: chart?.captions[captionIdx] || '',
+        allCaptions: chart?.captions || [],
+        captionIndex: captionIdx,
+        chartInfo: '',
         order: order + 1,
       };
     });
   },
 
   /**
-   * Mark set as completed
+   * No-op: sets are now reusable, completion is tracked via sessions
    */
-  completeSet: async () => {
-    const { assignedSet } = get();
-    if (!assignedSet) return;
-
-    try {
-      await updateDoc(doc(db, 'sets', assignedSet.id), {
-        status: 'collected',
-        completedAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error('Failed to complete set:', error);
-    }
-  },
+  completeSet: async () => {},
 
   // ==================== ACTIONS: SESSION ====================
   
@@ -304,6 +309,7 @@ export const useStudyStore = create((set, get) => ({
       consentGiven: false,
       assignedSet: null,
       chartData: [],
+      suneungData: [],
     });
   },
 }));
