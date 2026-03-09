@@ -74,9 +74,8 @@ export default function TaskPage() {
 
   const validateSubmission = () => {
     const stats = getStats();
-    const canvasObjects = canvasActionsRef.current?.getCanvas()?.getObjects()?.length ?? 0;
-
-    if (stats.strokeCount === 0 && stats.shapeCount === 0 && canvasObjects === 0) {
+    
+    if (stats.strokeCount === 0) {
       setError('Please draw an annotation on the chart before continuing.');
       return false;
     }
@@ -173,7 +172,7 @@ export default function TaskPage() {
             />
           </div>
           <p className="instruction-hint">
-            Draw on the chart to visually explain the specific highlighted caption.(Not the whole caption)
+            Draw on the chart above to visually explain the caption.
           </p>
         </div>
 
@@ -181,16 +180,7 @@ export default function TaskPage() {
         <aside className="info-section">
           <div className="caption-display">
             <h2>Caption</h2>
-            <p className="caption-paragraph">
-              {currentStimulus.allCaptions.map((sentence, i) => (
-                <span
-                  key={i}
-                  className={i === currentStimulus.captionIndex ? 'caption-sentence caption-sentence--highlight' : 'caption-sentence'}
-                >
-                  {sentence}{' '}
-                </span>
-              ))}
-            </p>
+            <p>{currentStimulus.caption}</p>
           </div>
 
           <div className="questions-scroll">
