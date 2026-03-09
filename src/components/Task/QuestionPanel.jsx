@@ -2,36 +2,34 @@ import { useState, useEffect } from 'react';
 import questionsConfig from '../../config/questions.json';
 
 export default function QuestionPanel({ onResponsesChange, disabled = false }) {
+  const [activeVersion, setActiveVersion] = useState(questionsConfig.versions[0].id);
   const [responses, setResponses] = useState({});
   const [errors, setErrors] = useState({});
 
-  const { questions } = questionsConfig;
+  const { versions } = questionsConfig;
 
-  useEffect(() => {
-    // Reset responses when component mounts (new trial)
-    setResponses({});
-    setErrors({});
-  }, []);
-
-  const handleChange = (questionId, value) => {
-    const newResponses = { ...responses, [questionId]: value };
-    setResponses(newResponses);
-    
-    // Clear error
-    if (errors[questionId]) {
-      setErrors(prev => ({ ...prev, [questionId]: null }));
-    }
-
-    // Notify parent
-    if (onResponsesChange) {
-      onResponsesChange(newResponses);
-    }
+  const shouldShowQuestion = (question, currentResponses) => {
+    if (!question.showIf) return true;
+    return currentResponses[question.showIf.questionId] === question.showIf.value;
   };
 
-  const validate = () => {
+  const buildVersionResponses = (allResponses, versionId) => {
+    const versionQuestions = versions.find(v => v.id === versionId)?.questions || [];
+    const result = { selectedVersion: versionId };
+    versionQuestions.forEach(q => {
+      if (allResponses[q.id] !== undefined) {
+        result[q.id] = allResponses[q.id];
+      }
+    });
+    return result;
+  };
+
+  const createValidate = (allResponses, versionId) => () => {
+    const versionQuestions = versions.find(v => v.id === versionId)?.questions || [];
     const newErrors = {};
-    questions.forEach(q => {
-      if (q.required && !responses[q.id]) {
+    versionQuestions.forEach(q => {
+      if (!shouldShowQuestion(q, allResponses)) return;
+      if (q.required && !allResponses[q.id]) {
         newErrors[q.id] = 'This field is required';
       }
     });
@@ -39,12 +37,34 @@ export default function QuestionPanel({ onResponsesChange, disabled = false }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Expose validate method
+  useEffect(() => {
+    setResponses({});
+    setErrors({});
+  }, []);
+
   useEffect(() => {
     if (onResponsesChange) {
-      onResponsesChange(responses, validate);
+      onResponsesChange(
+        buildVersionResponses(responses, activeVersion),
+        createValidate(responses, activeVersion)
+      );
     }
-  }, [responses]);
+  }, [responses, activeVersion]);
+
+  const handleChange = (questionId, value) => {
+    const newResponses = { ...responses, [questionId]: value };
+    setResponses(newResponses);
+    if (errors[questionId]) {
+      setErrors(prev => ({ ...prev, [questionId]: null }));
+    }
+  };
+
+  const handleTabChange = (versionId) => {
+    setActiveVersion(versionId);
+    setErrors({});
+  };
+
+  const currentVersion = versions.find(v => v.id === activeVersion);
 
   const renderQuestion = (question) => {
     switch (question.type) {
@@ -55,13 +75,18 @@ export default function QuestionPanel({ onResponsesChange, disabled = false }) {
               <label key={option.value} className="radio-option">
                 <input
                   type="radio"
-                  name={question.id}
+                  name={`${activeVersion}_${question.id}`}
                   value={option.value}
                   checked={responses[question.id] === option.value}
                   onChange={(e) => handleChange(question.id, e.target.value)}
                   disabled={disabled}
                 />
-                <span className="radio-label">{option.label}</span>
+                <span className="radio-label-wrapper">
+                  <span className="radio-label">{option.label}</span>
+                  {option.tooltip && (
+                    <span className="option-tooltip-box">{option.tooltip}</span>
+                  )}
+                </span>
               </label>
             ))}
           </div>
@@ -70,23 +95,22 @@ export default function QuestionPanel({ onResponsesChange, disabled = false }) {
       case 'likert':
         return (
           <div className="likert-scale">
-            <span className="anchor anchor-low">{question.anchors.low}</span>
-            <div className="likert-options">
-              {Array.from({ length: question.scale }, (_, i) => i + 1).map((value) => (
-                <label key={value} className="likert-option">
-                  <input
-                    type="radio"
-                    name={question.id}
-                    value={value}
-                    checked={responses[question.id] === value}
-                    onChange={() => handleChange(question.id, value)}
-                    disabled={disabled}
-                  />
-                  <span className="likert-value">{value}</span>
-                </label>
-              ))}
-            </div>
-            <span className="anchor anchor-high">{question.anchors.high}</span>
+            {Array.from({ length: question.scale }, (_, i) => i + 1).map((value) => (
+              <label key={value} className="likert-option">
+                <input
+                  type="radio"
+                  name={`${activeVersion}_${question.id}`}
+                  value={value}
+                  checked={responses[question.id] === value}
+                  onChange={() => handleChange(question.id, value)}
+                  disabled={disabled}
+                />
+                <span className="likert-value">{value}</span>
+                <span className="likert-anchor">
+                  {question.labels?.[value - 1] ?? ''}
+                </span>
+              </label>
+            ))}
           </div>
         );
 
@@ -109,23 +133,37 @@ export default function QuestionPanel({ onResponsesChange, disabled = false }) {
 
   return (
     <div className="question-panel">
-      <h3>Questions</h3>
-      
-      {questions.map((question) => (
-        <div key={question.id} className={`question-item ${errors[question.id] ? 'has-error' : ''}`}>
-          <label className="question-label">
-            {question.question}
-            {question.required && <span className="required">*</span>}
-          </label>
-          
-          {renderQuestion(question)}
-          
-          {errors[question.id] && (
-            <span className="error-message">{errors[question.id]}</span>
-          )}
-        </div>
-      ))}
+      <div className="version-tabs">
+        {versions.map((version) => (
+          <button
+            key={version.id}
+            className={`version-tab ${activeVersion === version.id ? 'active' : ''}`}
+            onClick={() => handleTabChange(version.id)}
+            disabled={disabled}
+          >
+            {version.label}
+          </button>
+        ))}
+      </div>
+
+      {currentVersion?.questions.map((question) => {
+        if (!shouldShowQuestion(question, responses)) return null;
+        return (
+          <div
+            key={`${activeVersion}_${question.id}`}
+            className={`question-item ${errors[question.id] ? 'has-error' : ''}`}
+          >
+            <label className="question-label">
+              {question.question}
+              {question.required && <span className="required">*</span>}
+            </label>
+            {renderQuestion(question)}
+            {errors[question.id] && (
+              <span className="error-message">{errors[question.id]}</span>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
-

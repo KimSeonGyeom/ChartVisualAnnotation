@@ -74,8 +74,9 @@ export default function TaskPage() {
 
   const validateSubmission = () => {
     const stats = getStats();
-    
-    if (stats.strokeCount === 0 && stats.shapeCount === 0) {
+    const canvasObjects = canvasActionsRef.current?.getCanvas()?.getObjects()?.length ?? 0;
+
+    if (stats.strokeCount === 0 && stats.shapeCount === 0 && canvasObjects === 0) {
       setError('Please draw an annotation on the chart before continuing.');
       return false;
     }
