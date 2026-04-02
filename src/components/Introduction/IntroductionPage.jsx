@@ -66,8 +66,8 @@ export default function IntroductionPage() {
       const sessionId = searchParams.get('SESSION_ID') || `session_${Date.now()}`;
       await initializeSession(prolificId, studyId, sessionId, chartExperience);
       
-      // 3. Go to task
-      navigate('/task');
+      // 3. Go to tutorial
+      navigate('/tutorial');
     } catch (err) {
       console.error('Failed to start session:', err);
       if (err.message === 'No available sets') {

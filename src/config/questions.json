@@ -2,104 +2,36 @@
   "versions": [
     {
       "id": "v1",
-      "label": "V1. Target & Intent",
+      "label": "Questions",
       "questions": [
         {
-          "id": "v1_target",
-          "type": "single-choice",
-          "question": "1. What specifically was the target of your annotation?",
-          "required": true,
-          "options": [
-            { "value": "data_item", "label": "Data item, set, & series targets", "tooltip": "Annotation on data points, groups of items, or entire series" },
-            { "value": "coordinate", "label": "Coordinate space targets", "tooltip": "Annotation on values or ranges in the chart's coordinate system (min, max, average etc)" },
-            { "value": "chart_element", "label": "Chart element targets", "tooltip": "Annotation on structural parts of the chart (title, axes, legend, etc.)" },
-            { "value": "prior", "label": "Prior annotations", "tooltip": "Annotation referring to an existing annotation" }
-          ]
-        },
-        {
-          "id": "v1_intent",
-          "type": "single-choice",
-          "question": "2. What was your primary intent for this annotation?",
-          "required": true,
-          "options": [
-            { "value": "identify", "label": "Identify", "tooltip": "Indicate specific data points, elements, or areas of interest" },
-            { "value": "summarize", "label": "Summarize", "tooltip": "Show key trends, statistics, or overall patterns" },
-            { "value": "compare", "label": "Compare", "tooltip": "Highlight differences or similarities between data elements" },
-            { "value": "present", "label": "Present", "tooltip": "Provide additional context or explanations related to the data" },
-            { "value": "other", "label": "Other", "tooltip": "Other" }
-          ]
-        },
-        {
-          "id": "v1_intent_other",
-          "type": "text",
-          "question": "2-1. If you selected \"Other,\" please describe your intent in detail.",
-          "placeholder": "Describe your intent...",
-          "required": true,
-          "showIf": { "questionId": "v1_intent", "value": "other" }
-        },
-        {
-          "id": "v1_difficulty",
+          "id": "caption_difficulty",
           "type": "likert",
-          "question": "3. On a scale of 1 to 5, how difficult was it to understand the caption when no annotation was provided?",
+          "question": "1. On a scale of 1 to 5, how difficult was it to understand the caption itself?",
           "scale": 5,
           "labels": ["Very easy", "Easy", "Neutral", "Hard", "Very hard"],
           "required": true
         },
         {
-          "id": "v1_difficulty_reason",
+          "id": "caption_difficulty_reason",
           "type": "text",
-          "question": "3-1. Could you please explain the reason for your rating above?",
-          "placeholder": "Explain your difficulty rating...",
+          "question": "1-1. Could you please explain the reason for your rating above?",
+          "placeholder": "Explain your reason...",
           "required": true
-        }
-      ]
-    },
-    {
-      "id": "v2",
-      "label": "V2. Data Fact",
-      "questions": [
-        {
-          "id": "v2_fact",
-          "type": "single-choice",
-          "question": "1. What kind of data fact does your annotation imply?",
-          "required": true,
-          "options": [
-            { "value": "value", "label": "Value/derived value", "tooltip": "A value of a data item or a calculated value" },
-            { "value": "distribution", "label": "Distribution", "tooltip": "How values are spread across data" },
-            { "value": "difference", "label": "Difference", "tooltip": "A noticeable difference between data items" },
-            { "value": "extreme", "label": "Extreme", "tooltip": "The highest or lowest value in a set" },
-            { "value": "rank", "label": "Rank", "tooltip": "The ordered position of a value" },
-            { "value": "categories", "label": "Categories", "tooltip": "Grouping data items into distinct categories based on their attributes" },
-            { "value": "cluster", "label": "Cluster", "tooltip": "A group of similar data items" },
-            { "value": "outliers", "label": "Outliers", "tooltip": "Data points that strongly differ from others" },
-            { "value": "association", "label": "Association", "tooltip": "A relationship or correlation between variables or data elements" },
-            { "value": "trend", "label": "Trend", "tooltip": "A pattern of change over time or another dimension" },
-            { "value": "meta_fact", "label": "Meta fact", "tooltip": "A fact about the data itself" },
-            { "value": "compound_fact", "label": "Compound fact", "tooltip": "A combination of multiple facts" },
-            { "value": "other", "label": "Other", "tooltip": "Other" }
-          ]
         },
         {
-          "id": "v2_fact_other",
-          "type": "text",
-          "question": "1-1. If you selected \"Other,\" please describe the specific data fact in detail.",
-          "placeholder": "Describe the data fact...",
-          "required": true,
-          "showIf": { "questionId": "v2_fact", "value": "other" }
-        },
-        {
-          "id": "v2_difficulty",
+          "id": "drawing_difficulty",
           "type": "likert",
-          "question": "2. On a scale of 1 to 5, how difficult was it to understand the caption when no annotation was provided?",
+          "question": "2. On a scale of 1 to 5, how difficult was it to draw/mark the key information on the chart?",
           "scale": 5,
           "labels": ["Very easy", "Easy", "Neutral", "Hard", "Very hard"],
           "required": true
         },
         {
-          "id": "v2_difficulty_reason",
+          "id": "drawing_difficulty_reason",
           "type": "text",
           "question": "2-1. Could you please explain the reason for your rating above?",
-          "placeholder": "Explain your difficulty rating...",
+          "placeholder": "Explain your reason...",
           "required": true
         }
       ]

@@ -5,54 +5,15 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
   const { 
     config, 
     setColor, 
-    setWidth, 
     allowCustomization,
-    activeTool,
-    setActiveTool,
-    toolOptions,
-    setToolOption,
   } = useDrawingStore();
   
   const { penOptions } = studyConfig.features;
 
-  const tools = [
-    { id: 'pen', label: '✎', title: 'Pen' },
-    { id: 'text', label: 'T', title: 'Text' },
-    { id: 'arrow', label: '→', title: 'Arrow' },
-    { id: 'hline', label: '─', title: 'Horizontal Line' },
-    { id: 'vline', label: '│', title: 'Vertical Line' },
-    { id: 'bbox', label: '□', title: 'Bounding Box' },
-    { id: 'highlight', label: '▒', title: 'Highlight' },
-    { id: 'bracket', label: '⎵', title: 'Bracket' },
-  ];
-
-  const fontSizes = [
-    { value: 12, label: 'S' },
-    { value: 18, label: 'M' },
-    { value: 24, label: 'L' },
-    { value: 32, label: 'XL' },
-  ];
-
   return (
     <div className="pen-toolbar-wrapper">
-      {/* Row 1: Tools (left) and Actions (right) */}
+      {/* Row 1: Actions */}
       <div className="toolbar-row toolbar-row-main">
-        <div className="toolbar-section">
-          <span className="toolbar-label">Tool:</span>
-          <div className="tool-options">
-            {tools.map((tool) => (
-              <button
-                key={tool.id}
-                className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
-                onClick={() => setActiveTool(tool.id)}
-                title={tool.title}
-              >
-                {tool.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="toolbar-section">
           <button className="toolbar-btn" onClick={onUndo} title="Undo">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -70,10 +31,7 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
             </svg>
           </button>
         </div>
-      </div>
 
-      {/* Row 2: Style Controls */}
-      <div className="toolbar-row toolbar-row-options">
         {/* Color Selection */}
         {allowCustomization && (
           <div className="toolbar-section">
@@ -90,129 +48,6 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
               ))}
             </div>
           </div>
-        )}
-
-        {/* Font Size (only for text tool) */}
-        {activeTool === 'text' && (
-          <>
-            <div className="toolbar-divider" />
-            <div className="toolbar-section">
-              <span className="toolbar-label">Size:</span>
-              <div className="option-buttons">
-                {fontSizes.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    className={`option-btn ${toolOptions.fontSize === value ? 'active' : ''}`}
-                    onClick={() => setToolOption('fontSize', value)}
-                    title={`${value}px`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Pen Width (only for pen tool) */}
-        {activeTool === 'pen' && allowCustomization && (
-          <>
-            <div className="toolbar-divider" />
-            <div className="toolbar-section">
-              <span className="toolbar-label">Size:</span>
-              <div className="width-options">
-                {penOptions.widths.map((width) => (
-                  <button
-                    key={width}
-                    className={`width-btn ${config.width === width ? 'active' : ''}`}
-                    onClick={() => setWidth(width)}
-                    title={`${width}px`}
-                  >
-                    <span 
-                      className="width-preview" 
-                      style={{ 
-                        width: width * 2, 
-                        height: width * 2,
-                        backgroundColor: config.color 
-                      }} 
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Line Style (for arrow, hline, vline) */}
-        {(activeTool === 'arrow' || activeTool === 'hline' || activeTool === 'vline') && (
-          <>
-            <div className="toolbar-divider" />
-            <div className="toolbar-section">
-              <span className="toolbar-label">Style:</span>
-              <div className="option-buttons">
-                <button
-                  className={`option-btn ${toolOptions.lineStyle === 'solid' ? 'active' : ''}`}
-                  onClick={() => setToolOption('lineStyle', 'solid')}
-                  title="Solid"
-                >
-                  ─
-                </button>
-                <button
-                  className={`option-btn ${toolOptions.lineStyle === 'dashed' ? 'active' : ''}`}
-                  onClick={() => setToolOption('lineStyle', 'dashed')}
-                  title="Dashed"
-                >
-                  ┄
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Arrow Options */}
-        {activeTool === 'arrow' && (
-          <>
-            <div className="toolbar-divider" />
-            <div className="toolbar-section">
-              <span className="toolbar-label">Dir:</span>
-              <div className="option-buttons">
-                <button
-                  className={`option-btn ${toolOptions.arrowDirection === 'single' ? 'active' : ''}`}
-                  onClick={() => setToolOption('arrowDirection', 'single')}
-                  title="Single"
-                >
-                  →
-                </button>
-                <button
-                  className={`option-btn ${toolOptions.arrowDirection === 'double' ? 'active' : ''}`}
-                  onClick={() => setToolOption('arrowDirection', 'double')}
-                  title="Double"
-                >
-                  ↔
-                </button>
-              </div>
-            </div>
-            <div className="toolbar-divider" />
-            <div className="toolbar-section">
-              <span className="toolbar-label">Shape:</span>
-              <div className="option-buttons">
-                <button
-                  className={`option-btn ${toolOptions.arrowShape === 'straight' ? 'active' : ''}`}
-                  onClick={() => setToolOption('arrowShape', 'straight')}
-                  title="Straight"
-                >
-                  ╱
-                </button>
-                <button
-                  className={`option-btn ${toolOptions.arrowShape === 'curved' ? 'active' : ''}`}
-                  onClick={() => setToolOption('arrowShape', 'curved')}
-                  title="Curved"
-                >
-                  ⌒
-                </button>
-              </div>
-            </div>
-          </>
         )}
       </div>
     </div>

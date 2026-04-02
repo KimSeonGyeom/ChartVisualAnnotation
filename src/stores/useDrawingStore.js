@@ -134,7 +134,27 @@ export const useDrawingStore = create((set, get) => ({
 
   // ==================== GETTERS ====================
 
-  getActivities: () => get().activities,
+  getActivities: () => {
+    // Replay undo/clear to return only effective (not deleted) activities
+    const { activities } = get();
+    const stack = [];
+    for (const activity of activities) {
+      if (activity.type === 'clear') {
+        stack.length = 0;
+      } else if (activity.type === 'undo') {
+        // Remove last stroke_end or shape_created
+        for (let i = stack.length - 1; i >= 0; i--) {
+          if (stack[i].type === 'stroke_end' || stack[i].type === 'shape_created' || stack[i].type === 'stroke_start') {
+            stack.splice(i, 1);
+            break;
+          }
+        }
+      } else {
+        stack.push(activity);
+      }
+    }
+    return stack;
+  },
 
   getStats: () => {
     const { trialStartTime, activities } = get();

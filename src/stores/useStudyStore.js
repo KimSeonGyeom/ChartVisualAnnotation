@@ -227,33 +227,28 @@ export const useStudyStore = create((set, get) => ({
       const timing = get().trialTimings.find(t => t.trialId === trialData.trialId);
       const trialDocId = `${sessionDocId}_${trialData.trialId}`;
 
-      // Save trial document to Firestore
       await setDoc(doc(db, 'trials', trialDocId), {
         sessionId: sessionDocId,
         trialId: trialData.trialId,
         imageIndex: trialData.imageIndex,
         
-        // Timing data
         timing: {
           initTime: timing?.initTime || null,
           completionTime: timing?.completionTime || null,
           durationMs: timing?.durationMs || null,
         },
         
-        // Annotation data (SVG only)
         annotation: {
           svg: trialData.annotation?.svg || null,
+          imageData: trialData.annotation?.imageData || null,
         },
         
-        // Survey responses
         responses: trialData.responses || {},
         
-        // Drawing activity log (as JSON string to avoid nested arrays)
         drawingActivitiesJson: trialData.drawingActivities 
           ? JSON.stringify(trialData.drawingActivities) 
           : null,
         
-        // Metadata
         strokeCount: trialData.strokeCount || 0,
         totalPathLength: trialData.totalPathLength || 0,
         

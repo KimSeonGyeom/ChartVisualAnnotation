@@ -133,19 +133,7 @@ export default function QuestionPanel({ onResponsesChange, disabled = false }) {
 
   return (
     <div className="question-panel">
-      <div className="version-tabs">
-        {versions.map((version) => (
-          <button
-            key={version.id}
-            className={`version-tab ${activeVersion === version.id ? 'active' : ''}`}
-            onClick={() => handleTabChange(version.id)}
-            disabled={disabled}
-          >
-            {version.label}
-          </button>
-        ))}
-      </div>
-
+      <h2 className="question-panel-title">Survey</h2>
       {currentVersion?.questions.map((question) => {
         if (!shouldShowQuestion(question, responses)) return null;
         return (

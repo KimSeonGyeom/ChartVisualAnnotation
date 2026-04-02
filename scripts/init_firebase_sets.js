@@ -25,10 +25,10 @@ const db = getFirestore(app);
 
 // Set definitions
 const sets = [
-  { id: "suneung_set_0", type: "suneung", captionIndex: 0, indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
-  { id: "suneung_set_1", type: "suneung", captionIndex: 1, indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
-  { id: "suneung_set_2", type: "suneung", captionIndex: 2, indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
-  { id: "suneung_set_3", type: "suneung", captionIndex: 3, indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+  { id: "suneung_set_0", type: "suneung", captionIndex: 0, indices: [2, 3, 4] },
+  { id: "suneung_set_1", type: "suneung", captionIndex: 1, indices: [2, 3, 4] },
+  { id: "suneung_set_2", type: "suneung", captionIndex: 2, indices: [2, 3, 4] },
+  { id: "suneung_set_3", type: "suneung", captionIndex: 3, indices: [2, 3, 4] },
 ];
 
 async function initSets() {

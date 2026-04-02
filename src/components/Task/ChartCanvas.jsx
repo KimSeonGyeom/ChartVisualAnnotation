@@ -519,8 +519,14 @@ export default function ChartCanvas({
     const canvas = fabricRef.current;
     if (!canvas) return null;
 
+    const raw = canvas.toDataURL({ format: 'jpeg', quality: 1, multiplier: 1 });
+    const imageData = raw.startsWith('data:')
+      ? raw
+      : `data:image/jpeg;base64,${raw}`;
+
     return {
       svg: canvas.toSVG(),
+      imageData,
     };
   }, []);
 

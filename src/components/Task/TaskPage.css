@@ -1,8 +1,8 @@
 .task-page {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* Header */
@@ -47,7 +47,7 @@
   padding: 1.5rem 2rem;
   gap: 2rem;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Left: Canvas Section */
@@ -56,6 +56,39 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+.canvas-instruction {
+  margin-bottom: 14px;
+}
+
+.canvas-instruction-divider {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 14px 0 0 0;
+}
+
+.canvas-instruction-main {
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.canvas-instruction-list {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.canvas-instruction-list li {
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.5;
 }
 
 .canvas-wrapper {
@@ -260,7 +293,7 @@
   flex-direction: column;
   border-left: 1px solid #eee;
   padding-left: 2rem;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Caption - Fixed at top with max height */
@@ -268,8 +301,10 @@
   flex-shrink: 0;
   max-height: 350px;
   overflow-y: auto;
+  padding-top: 1.25rem;
   padding-bottom: 1.5rem;
   margin-bottom: 1.5rem;
+  border-top: 1px solid #ddd;
   border-bottom: 1px solid #eee;
 }
 
@@ -283,7 +318,7 @@
 }
 
 .caption-paragraph {
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.8;
   margin: 0;
 }
@@ -295,7 +330,7 @@
 .caption-sentence--highlight {
   color: #111;
   font-weight: 600;
-  background: #fff9c4;
+  background: #e8e8e8;
   padding: 0.1rem 0.25rem;
 }
 
@@ -372,6 +407,15 @@
   display: block;
 }
 
+.question-panel-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #111;
+}
+
 .question-panel h3 {
   font-size: 0.875rem;
   color: #888;
@@ -382,7 +426,7 @@
 }
 
 .question-item {
-  margin-bottom: 1.5rem;
+  margin-bottom: 4rem;
 }
 
 .question-item.has-error .question-label {

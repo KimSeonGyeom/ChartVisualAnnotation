@@ -18,11 +18,11 @@
     "allowPenCustomization": true,
     "penDefaults": {
       "color": "#000000",
-      "width": 3
+      "width": 2
     },
     "penOptions": {
-      "colors": ["#000000", "#e63946", "#1d3557"],
-      "widths": [2, 3, 5, 8]
+      "colors": ["#000000", "#e63946", "#22c55e"],
+      "widths": [2]
     }
   }
 }
