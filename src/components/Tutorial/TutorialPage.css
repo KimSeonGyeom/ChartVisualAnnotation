@@ -1,90 +1,179 @@
 .tutorial-page {
   min-height: 100vh;
-  background-color: #f5f5f5;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 1.25rem 1rem;
 }
 
 .tutorial-container {
-  background: #fff;
-  border-radius: 12px;
-  padding: 48px 56px;
-  max-width: 1200px;
+  max-width: 1400px;
   width: 100%;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  padding: 0;
 }
 
 .tutorial-title {
-  font-size: 2.4rem;
+  font-size: 2.05rem;
   font-weight: 700;
-  margin-bottom: 28px;
+  margin-bottom: 0.85rem;
   color: #111;
+  line-height: 1.2;
 }
 
 .tutorial-desc {
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 1.25rem;
+  line-height: 1.3;
   color: #333;
-  margin-bottom: 16px;
+  margin-bottom: 0.65rem;
+  max-width: none;
 }
 
-.tutorial-images {
-  display: flex;
-  gap: 24px;
-  margin: 32px 0;
-  justify-content: center;
+.tutorial-visual-emphasis {
+  padding-left: 1.25rem;
+  margin: 0.85rem 0 1rem 0;
 }
 
-.tutorial-image-box {
-  flex: 1;
+.tutorial-section-label {
+  font-size: 0.95rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 400;
+  margin: 0 0 0.55rem 0;
+}
+
+.tutorial-images-section {
+  margin: 0 0 1rem 0;
+}
+
+/* Toolbar row; row 2 = same height L/R, captions share one baseline at bottom */
+.tutorial-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 0.35rem 1.25rem;
+  align-items: stretch;
+  width: 100%;
+}
+
+.tutorial-comparison-toolbar {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  align-self: start;
+}
+
+.tutorial-comparison-spacer {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  align-self: start;
+}
+
+.tutorial-comparison-canvas {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #f9f9f9;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 16px;
+  align-self: stretch;
 }
 
-.tutorial-image-box img {
+.tutorial-comparison-sample {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: stretch;
+}
+
+.tutorial-comparison .tutorial-image-label {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  width: 100%;
+  max-width: 520px;
+}
+
+.tutorial-practice-canvas-wrap {
+  width: 100%;
+  max-width: 520px;
+  align-self: stretch;
+}
+
+.tutorial-practice-canvas-wrap .chart-canvas-container {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tutorial-comparison-sample img {
   width: 100%;
   max-width: 520px;
   height: auto;
   object-fit: contain;
-  border-radius: 4px;
 }
 
 .tutorial-image-label {
-  margin-top: 12px;
-  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
   color: #666;
   text-align: center;
+  line-height: 1.25;
 }
 
-.tutorial-image-subcaption {
-  margin-top: 8px;
-  font-size: 0.875rem;
-  color: #333;
-  text-align: center;
-  font-style: italic;
-  line-height: 1.5;
+/* Caption text matches task page; no scroll box (TaskPage .caption-display is global) */
+.tutorial-caption-panel {
+  margin: 0 0 1rem 0;
+  padding: 0;
+  max-height: none;
+  overflow: visible;
 }
 
-.tutorial-caption-box {
-  background: #f0f4ff;
-  border-left: 4px solid #4a6cf7;
-  border-radius: 6px;
-  padding: 14px 20px;
-  margin: 20px 0;
-  font-size: 1rem;
-  color: #222;
-  line-height: 1.6;
+.caption-paragraph {
+  font-size: 1.35rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.caption-sentence {
+  color: #aaa;
+}
+
+.caption-sentence--highlight {
+  color: #111;
+  font-weight: 600;
+  background: #e8e8e8;
+  padding: 0.1rem 0.25rem;
 }
 
 .tutorial-btn {
-  margin-top: 32px;
-  display: block;
-  width: fit-content;
+  margin-top: 1.1rem;
+}
+
+@media (max-width: 900px) {
+  .tutorial-comparison {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .tutorial-comparison-toolbar {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .tutorial-comparison-spacer {
+    display: none;
+  }
+
+  .tutorial-comparison-canvas {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .tutorial-comparison-sample {
+    grid-column: 1;
+    grid-row: 3;
+  }
 }

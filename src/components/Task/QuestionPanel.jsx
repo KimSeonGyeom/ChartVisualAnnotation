@@ -66,6 +66,12 @@ export default function QuestionPanel({ onResponsesChange, disabled = false }) {
 
   const currentVersion = versions.find(v => v.id === activeVersion);
 
+  const visibleQuestions =
+    currentVersion?.questions.filter((q) => shouldShowQuestion(q, responses)) ?? [];
+  const chunkIds = [...new Set(visibleQuestions.map((q) => q.chunk ?? 0))].sort(
+    (a, b) => Number(a) - Number(b)
+  );
+
   const renderQuestion = (question) => {
     switch (question.type) {
       case 'single-choice':
@@ -134,24 +140,27 @@ export default function QuestionPanel({ onResponsesChange, disabled = false }) {
   return (
     <div className="question-panel">
       <h2 className="question-panel-title">Survey</h2>
-      {currentVersion?.questions.map((question) => {
-        if (!shouldShowQuestion(question, responses)) return null;
-        return (
-          <div
-            key={`${activeVersion}_${question.id}`}
-            className={`question-item ${errors[question.id] ? 'has-error' : ''}`}
-          >
-            <label className="question-label">
-              {question.question}
-              {question.required && <span className="required">*</span>}
-            </label>
-            {renderQuestion(question)}
-            {errors[question.id] && (
-              <span className="error-message">{errors[question.id]}</span>
-            )}
-          </div>
-        );
-      })}
+      {chunkIds.map((chunkId) => (
+        <div key={`chunk_${chunkId}`} className="question-chunk">
+          {visibleQuestions
+            .filter((q) => (q.chunk ?? 0) === chunkId)
+            .map((question) => (
+              <div
+                key={`${activeVersion}_${question.id}`}
+                className={`question-item ${errors[question.id] ? 'has-error' : ''}`}
+              >
+                <label className="question-label">
+                  {question.question}
+                  {question.required && <span className="required">*</span>}
+                </label>
+                {renderQuestion(question)}
+                {errors[question.id] && (
+                  <span className="error-message">{errors[question.id]}</span>
+                )}
+              </div>
+            ))}
+        </div>
+      ))}
     </div>
   );
 }

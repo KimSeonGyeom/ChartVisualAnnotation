@@ -6,6 +6,11 @@ import { db } from '../services/firebase';
 
 const NUM_SETS = 4; // suneung_set_0 ~ suneung_set_3
 
+/** Main task trials only (excludes tutorial practice), matches getSetStimuli ids: trial_1, trial_2, … */
+function isMainTaskTrialId(trialId) {
+  return typeof trialId === 'string' && /^trial_\d+$/.test(trialId);
+}
+
 export const useStudyStore = create((set, get) => ({
   // ==================== STATE ====================
   participant: null,
@@ -274,11 +279,12 @@ export const useStudyStore = create((set, get) => ({
     if (!sessionDocId) return;
 
     try {
+      const mainTrials = trialTimings.filter((t) => isMainTaskTrialId(t.trialId));
       await updateDoc(doc(db, 'sessions', sessionDocId), {
         status: 'completed',
         completedAt: serverTimestamp(),
-        totalTrials: trialTimings.length,
-        totalDurationMs: trialTimings.reduce((sum, t) => sum + (t.durationMs || 0), 0),
+        totalTrials: mainTrials.length,
+        totalDurationMs: mainTrials.reduce((sum, t) => sum + (t.durationMs || 0), 0),
       });
 
       // Mark set as completed

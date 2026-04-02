@@ -6,6 +6,7 @@
       "questions": [
         {
           "id": "caption_difficulty",
+          "chunk": 1,
           "type": "likert",
           "question": "1. On a scale of 1 to 5, how difficult was it to understand the caption itself?",
           "scale": 5,
@@ -13,24 +14,27 @@
           "required": true
         },
         {
-          "id": "caption_difficulty_reason",
-          "type": "text",
-          "question": "1-1. Could you please explain the reason for your rating above?",
-          "placeholder": "Explain your reason...",
-          "required": true
-        },
-        {
           "id": "drawing_difficulty",
+          "chunk": 2,
           "type": "likert",
-          "question": "2. On a scale of 1 to 5, how difficult was it to draw/mark the key information on the chart?",
+          "question": "2. On a scale of 1 to 5, how difficult was it to add visual highlights to the chart for this caption?",
           "scale": 5,
           "labels": ["Very easy", "Easy", "Neutral", "Hard", "Very hard"],
           "required": true
         },
         {
-          "id": "drawing_difficulty_reason",
+          "id": "drawing_help_intent",
+          "chunk": 2,
           "type": "text",
-          "question": "2-1. Could you please explain the reason for your rating above?",
+          "question": "2-1. What were you trying to help others understand through your drawing and visual highlights?",
+          "placeholder": "Describe what you aimed to convey...",
+          "required": true
+        },
+        {
+          "id": "drawing_difficulty_reason",
+          "chunk": 2,
+          "type": "text",
+          "question": "2-2. Briefly explain why you chose that difficulty rating for adding visual highlights to the chart for this caption.",
           "placeholder": "Explain your reason...",
           "required": true
         }

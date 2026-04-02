@@ -51,7 +51,7 @@ export default function FinishPage() {
 
         <div className="redirect-section">
           <p className="redirect-instruction">
-            Please click the button below to complete your submission on Prolific and receive your payment.
+            Please click the button below to complete your submission on Prolific.
           </p>
           
           <button 
@@ -63,18 +63,12 @@ export default function FinishPage() {
           </button>
 
           <p className="redirect-note">
-            If the button doesn't work, please copy this completion code and enter it on Prolific:
+            Completion code:
           </p>
           <code className="completion-code">
             {studyConfig.prolificCompletionUrl.split('cc=')[1] || 'XXXXXXXX'}
           </code>
         </div>
-
-        <footer className="finish-footer">
-          <p>
-            If you have any questions about this study, please contact the research team.
-          </p>
-        </footer>
       </div>
     </div>
   );

@@ -76,8 +76,8 @@ export default function TaskPage() {
     const stats = getStats();
     const canvasObjects = canvasActionsRef.current?.getCanvas()?.getObjects()?.length ?? 0;
 
-    if (stats.strokeCount === 0 && stats.shapeCount === 0 && canvasObjects === 0) {
-      setError('Please draw an annotation on the chart before continuing.');
+    if (stats.strokeCount === 0 && canvasObjects === 0) {
+      setError('Please add visual highlights on the chart before continuing.');
       return false;
     }
 
@@ -158,64 +158,80 @@ export default function TaskPage() {
       </header>
 
       <main className="task-content">
-        {/* Left: Canvas */}
-        <div className="chart-section">
-          <div className="canvas-instruction">
-            <p className="canvas-instruction-main">Read the caption below and freely draw or highlight the key information on the chart. Then, please answer the survey on the left.</p>
-            <ul className="canvas-instruction-list">
-              <li><strong>Hover</strong> your mouse over the chart to use the pen tool.</li>
-              <li><strong>Color:</strong> Change the pen color using the Color menu at the top right.</li>
-              <li><strong>Undo/Clear:</strong> Use the buttons at the top left to Undo/Redo. Click 'X' to clear all drawings.</li>
-              <li>To make <strong>straight lines</strong>, press down the <strong>Shift</strong> key while drawing.</li>
-            </ul>
-            <hr className="canvas-instruction-divider" />
-          </div>
-          <div className="canvas-wrapper">
-            <PenToolbar
-              onUndo={() => canvasActionsRef.current?.undo()}
-              onRedo={() => canvasActionsRef.current?.redo()}
-              onClear={() => canvasActionsRef.current?.clear()}
-            />
-            <ChartCanvas
-              key={`canvas-${currentTrialIndex}`}
-              imageUrl={currentStimulus.imageUrl}
-              onCanvasReady={handleCanvasReady}
-            />
-          </div>
-          <div className="caption-display">
-            <h2>Caption</h2>
-            <p className="caption-paragraph">
-              <span className="caption-sentence caption-sentence--highlight">
-                {currentStimulus.caption}
-              </span>
-            </p>
-          </div>
+        <div className="task-instruction-row">
+          <p className="canvas-instruction-main">
+            Read the caption below and use visual highlights on the chart to help others understand the caption in a clear, friendly way. Then, please answer the survey on the right.
+          </p>
         </div>
 
-        {/* Right: Questions (scrollable) */}
-        <aside className="info-section">
-          <div className="questions-scroll">
-            <QuestionPanel 
-              key={`questions-${currentTrialIndex}`}
-              onResponsesChange={handleResponsesChange}
-              disabled={isSubmitting}
-            />
+        <div className="task-main-row">
+          <div className="chart-section">
+            <div className="canvas-instruction">
+              <ul className="canvas-instruction-list">
+                <li>
+                  <strong>Pen:</strong> select Pen in the toolbar, then draw on the chart.
+                </li>
+                <li>
+                  <strong>Eraser:</strong> select Eraser and drag over pen strokes you drew; overlapping strokes are removed (does not remove the chart image).
+                </li>
+                <li>
+                  <strong>Color:</strong> change the pen color from the Color menu at the top right of the toolbar.
+                </li>
+                <li>
+                  <strong>Undo / Clear:</strong> use the buttons at the top left to undo or redo. Click the X to clear all drawings.
+                </li>
+                <li>
+                  To make <strong>straight lines</strong>, hold the <strong>Shift</strong> key while drawing with the pen.
+                </li>
+              </ul>
+              <hr className="canvas-instruction-divider" />
+            </div>
+            <div className="canvas-wrapper">
+              <PenToolbar
+                onUndo={() => canvasActionsRef.current?.undo()}
+                onRedo={() => canvasActionsRef.current?.redo()}
+                onClear={() => canvasActionsRef.current?.clear()}
+              />
+              <ChartCanvas
+                key={`canvas-${currentTrialIndex}`}
+                imageUrl={currentStimulus.imageUrl}
+                onCanvasReady={handleCanvasReady}
+              />
+            </div>
+            <div className="caption-display">
+              <h2>Caption</h2>
+              <p className="caption-paragraph">
+                <span className="caption-sentence caption-sentence--highlight">
+                  {currentStimulus.caption}
+                </span>
+              </p>
+            </div>
           </div>
 
-          {error && (
-            <div className="error-banner">
-              {error}
+          <aside className="info-section">
+            <div className="questions-scroll">
+              <QuestionPanel 
+                key={`questions-${currentTrialIndex}`}
+                onResponsesChange={handleResponsesChange}
+                disabled={isSubmitting}
+              />
             </div>
-          )}
 
-          <button
-            className="btn btn-primary btn-submit"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Saving...' : isLastTrial ? 'Finish Study' : 'Next Task'}
-          </button>
-        </aside>
+            {error && (
+              <div className="error-banner">
+                {error}
+              </div>
+            )}
+
+            <button
+              className="btn btn-primary btn-submit"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : isLastTrial ? 'Finish Study' : 'Next Task'}
+            </button>
+          </aside>
+        </div>
       </main>
     </div>
   );

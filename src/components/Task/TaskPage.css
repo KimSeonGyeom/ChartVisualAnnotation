@@ -42,12 +42,26 @@
 .task-content {
   flex: 1;
   display: flex;
+  flex-direction: column;
   max-width: 1400px;
   margin: 0 auto;
   padding: 1.5rem 2rem;
-  gap: 2rem;
+  gap: 1rem;
   width: 100%;
   overflow: visible;
+}
+
+.task-instruction-row {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.task-main-row {
+  flex: 1;
+  display: flex;
+  gap: 2rem;
+  min-height: 0;
+  width: 100%;
 }
 
 /* Left: Canvas Section */
@@ -72,8 +86,9 @@
   font-size: 1.55rem;
   font-weight: 600;
   color: #111;
-  margin-bottom: 10px;
-  line-height: 1.5;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.3;
+  max-width: none;
 }
 
 .canvas-instruction-list {
@@ -94,6 +109,8 @@
 .canvas-wrapper {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  align-items: center;
 }
 
 .chart-canvas-container {
@@ -102,6 +119,46 @@
   justify-content: center;
   align-items: flex-start;
   background: #fafafa;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.chart-stack {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+}
+
+.chart-stack--eraser {
+  cursor: none;
+}
+
+.chart-underlay {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.chart-fabric-layer {
+  position: relative;
+  z-index: 1;
+}
+
+.eraser-cursor-guide {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 2px solid #111;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.chart-fabric-layer canvas {
+  display: block;
 }
 
 .chart-canvas-container canvas {
@@ -133,6 +190,10 @@
 
 .toolbar-row-main {
   justify-content: space-between;
+}
+
+.toolbar-mode-select {
+  margin-right: 0.75rem;
 }
 
 .toolbar-row-options {
@@ -205,6 +266,13 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+/* Keep toolbar-row width stable when switching pen / eraser (color strip stays in layout). */
+.toolbar-section-colors--idle {
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
 }
 
 .toolbar-label {
@@ -425,8 +493,20 @@
   margin-bottom: 1.5rem;
 }
 
+.question-chunk {
+  margin-bottom: 2.25rem;
+}
+
+.question-chunk:last-child {
+  margin-bottom: 0;
+}
+
 .question-item {
-  margin-bottom: 4rem;
+  margin-bottom: 0.5rem;
+}
+
+.question-chunk .question-item:last-child {
+  margin-bottom: 0;
 }
 
 .question-item.has-error .question-label {
@@ -565,9 +645,13 @@
 /* Responsive */
 @media (max-width: 1000px) {
   .task-content {
-    flex-direction: column;
     padding: 1rem;
     overflow-y: auto;
+  }
+
+  .task-main-row {
+    flex-direction: column;
+    min-height: unset;
   }
 
   .info-section {

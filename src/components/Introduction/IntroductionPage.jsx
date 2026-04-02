@@ -102,8 +102,8 @@ export default function IntroductionPage() {
               <h3>What you will do:</h3>
               <ol>
                 <li>View a chart image with a caption describing an insight</li>
-                <li>Draw visual annotations on the chart to explain the caption</li>
-                <li>Answer a few questions about your annotation</li>
+                <li>Add visual highlights on the chart to help others understand the caption in a clear, friendly way</li>
+                <li>Answer a few questions about your highlights and experience</li>
                 <li>Repeat for several chart-caption pairs</li>
               </ol>
             </div>
@@ -144,9 +144,6 @@ export default function IntroductionPage() {
                 placeholder="Enter your Prolific ID"
                 disabled={isLoading}
               />
-              <p className="help-text">
-                Your Prolific ID should be auto-filled from the URL. If not, please enter it manually.
-              </p>
             </div>
           </section>
 

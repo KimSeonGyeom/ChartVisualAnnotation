@@ -2,39 +2,25 @@ import { create } from 'zustand';
 
 export const useDrawingStore = create((set, get) => ({
   // ==================== TOOL STATE ====================
-  activeTool: 'pen', // 'pen' | 'arrow' | 'hline' | 'vline' | 'bbox' | 'highlight' | 'bracket'
-  
+  // 'pen' | 'eraser'
+  activeTool: 'pen',
+
   // ==================== CONFIG ====================
   config: {
     color: '#000000',
     width: 3,
   },
   allowCustomization: true,
-  
-  // ==================== TOOL OPTIONS ====================
-  toolOptions: {
-    lineStyle: 'solid', // 'solid' | 'dashed'
-    arrowDirection: 'single', // 'single' | 'double'
-    arrowShape: 'straight', // 'straight' | 'curved'
-    fontSize: 18, // text tool font size
-  },
-  
+
   // ==================== ACTIVITY LOG STATE ====================
   activities: [],
   trialStartTime: null,
 
   // ==================== ACTIONS: TOOL ====================
-  
+
   setActiveTool: (tool) => {
     get().logActivity('tool_change', { newTool: tool });
     set({ activeTool: tool });
-  },
-  
-  setToolOption: (key, value) => {
-    get().logActivity('tool_option_change', { option: key, newValue: value });
-    set((state) => ({
-      toolOptions: { ...state.toolOptions, [key]: value },
-    }));
   },
 
   // ==================== ACTIONS: CONFIG ====================
@@ -53,10 +39,10 @@ export const useDrawingStore = create((set, get) => ({
   setColor: (color) => {
     const { config, allowCustomization } = get();
     if (!allowCustomization) return;
-    
-    get().logActivity('color_change', { 
-      previousColor: config.color, 
-      newColor: color 
+
+    get().logActivity('color_change', {
+      previousColor: config.color,
+      newColor: color,
     });
     set({ config: { ...config, color } });
   },
@@ -64,10 +50,10 @@ export const useDrawingStore = create((set, get) => ({
   setWidth: (width) => {
     const { config, allowCustomization } = get();
     if (!allowCustomization) return;
-    
-    get().logActivity('width_change', { 
-      previousWidth: config.width, 
-      newWidth: width 
+
+    get().logActivity('width_change', {
+      previousWidth: config.width,
+      newWidth: width,
     });
     set({ config: { ...config, width } });
   },
@@ -79,31 +65,24 @@ export const useDrawingStore = create((set, get) => ({
       activities: [],
       trialStartTime: Date.now(),
       activeTool: 'pen',
-      toolOptions: {
-        lineStyle: 'solid',
-        arrowDirection: 'single',
-        arrowShape: 'straight',
-        fontSize: 18,
-      },
     });
   },
 
   // ==================== ACTIONS: ACTIVITY LOGGING ====================
 
   logActivity: (type, data = {}) => {
-    const { trialStartTime, config, activeTool, toolOptions } = get();
+    const { trialStartTime, config, activeTool } = get();
     const now = Date.now();
 
     const activity = {
       type,
       timestamp: now,
       relativeTime: trialStartTime ? now - trialStartTime : 0,
-      data: { 
-        ...data, 
-        color: config.color, 
+      data: {
+        ...data,
+        color: config.color,
         width: config.width,
         activeTool,
-        toolOptions: activeTool !== 'pen' ? toolOptions : null,
       },
     };
 
@@ -119,10 +98,6 @@ export const useDrawingStore = create((set, get) => ({
   onStrokeEnd: (pathLength = 0, pointCount = 0) => {
     get().logActivity('stroke_end', { pathLength, pointCount });
   },
-  
-  onShapeCreated: (shapeType, shapeData = {}) => {
-    get().logActivity('shape_created', { shapeType, ...shapeData });
-  },
 
   onUndo: () => {
     get().logActivity('undo');
@@ -135,16 +110,17 @@ export const useDrawingStore = create((set, get) => ({
   // ==================== GETTERS ====================
 
   getActivities: () => {
-    // Replay undo/clear to return only effective (not deleted) activities
     const { activities } = get();
     const stack = [];
     for (const activity of activities) {
       if (activity.type === 'clear') {
         stack.length = 0;
       } else if (activity.type === 'undo') {
-        // Remove last stroke_end or shape_created
         for (let i = stack.length - 1; i >= 0; i--) {
-          if (stack[i].type === 'stroke_end' || stack[i].type === 'shape_created' || stack[i].type === 'stroke_start') {
+          if (
+            stack[i].type === 'stroke_end' ||
+            stack[i].type === 'stroke_start'
+          ) {
             stack.splice(i, 1);
             break;
           }
@@ -158,30 +134,25 @@ export const useDrawingStore = create((set, get) => ({
 
   getStats: () => {
     const { trialStartTime, activities } = get();
-    
+
     let strokeCount = 0;
     let totalPathLength = 0;
-    let shapeCount = 0;
-    
+
     for (const activity of activities) {
       if (activity.type === 'stroke_end') {
         strokeCount++;
         totalPathLength += activity.data?.pathLength || 0;
-      } else if (activity.type === 'shape_created') {
-        shapeCount++;
       } else if (activity.type === 'undo' && strokeCount > 0) {
         strokeCount--;
       } else if (activity.type === 'clear') {
         strokeCount = 0;
         totalPathLength = 0;
-        shapeCount = 0;
       }
     }
 
     return {
       strokeCount,
       totalPathLength,
-      shapeCount,
       trialDurationMs: trialStartTime ? Date.now() - trialStartTime : 0,
     };
   },
@@ -191,12 +162,6 @@ export const useDrawingStore = create((set, get) => ({
       activeTool: 'pen',
       config: { color: '#000000', width: 3 },
       allowCustomization: true,
-      toolOptions: {
-        lineStyle: 'solid',
-        arrowDirection: 'single',
-        arrowShape: 'straight',
-        fontSize: 18,
-      },
       activities: [],
       trialStartTime: null,
     });
