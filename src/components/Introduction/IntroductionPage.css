@@ -3,22 +3,22 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 2rem;
-  overflow: hidden;
+  padding: 1rem;
+  overflow: scroll;
 }
 
 .introduction-page .container {
-  max-width: 560px;
-  width: 100%;
+  width: 1200px;
+  min-width: 1200px;
   max-height: calc(100vh - 4rem);
   overflow-y: auto;
-  padding: 2rem;
+  padding: 0.2rem;
   background: #fff;
 }
 
 /* Header */
 .study-header {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .study-header h1 {
@@ -35,29 +35,27 @@
 .consent-section,
 .id-section,
 .experience-section {
-  margin-bottom: 2rem;
   padding-bottom: 2rem;
-  border-bottom: 1px solid #eee;
 }
 
 .study-description h2,
 .consent-section h2 {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .study-description p {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
   font-size: 1.125rem;
   line-height: 1.25;
 }
 
 /* Instructions */
 .instructions {
-  margin-top: 1.5rem;
+  margin-top: 0.75rem;
 }
 
 .instructions h3 {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   color: #666;
   font-weight: 400;
   font-size: 1.125rem;
@@ -72,45 +70,18 @@
 
 .instructions li {
   color: #444;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   font-size: 1.125rem;
   line-height: 1.25;
 }
 
-/* System Requirements */
-.system-requirements {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: #fff3cd;
-  border-left: 4px solid #ffc107;
-  border-radius: 4px;
-}
-
-.system-requirements h3 {
-  margin: 0 0 0.75rem 0;
-  color: #856404;
-  font-weight: 600;
-  font-size: 1.125rem;
-}
-
-.system-requirements p {
-  margin: 0.5rem 0;
-  font-size: 1rem;
-  color: #856404;
-  line-height: 1.5;
-}
-
-.system-requirements p strong {
-  font-weight: 700;
-}
-
 /* Consent */
 .consent-content {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .consent-content p {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.4rem;
   font-size: 1.125rem;
   color: #444;
 }
@@ -138,7 +109,7 @@
 
 /* Forms */
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .form-group label {
@@ -172,7 +143,7 @@
 .error-message {
   color: #e53935;
   font-size: 1.125rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 /* Submit Button */
@@ -180,11 +151,4 @@
   width: 100%;
   padding: 1rem;
   font-size: 1.2rem;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-  .introduction-page {
-    padding: 2rem 1rem;
-  }
 }

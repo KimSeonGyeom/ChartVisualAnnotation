@@ -109,11 +109,9 @@ export default function IntroductionPage() {
               </ol>
             </div>
 
-            <div className="system-requirements">
-              <h3>System Requirements:</h3>
-              <p><strong>This study requires a screen width of at least 1200px (laptop or desktop).</strong></p>
-              <p>Please use a laptop or desktop computer. Mobile devices and tablets are not supported.</p>
-            </div>
+            <p>
+              This study is designed for laptop/desktop screens (recommended width: 1200px or wider). Please use a display setting where no horizontal scrolling is needed.
+            </p>
           </section>
 
           {/* Consent */}

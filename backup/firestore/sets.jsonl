@@ -1,0 +1,9 @@
+{"id":"set_0","indices":[1,2,3,4,5],"completedAt":"2026-02-18T08:14:20.442Z","assignedAt":"2026-03-10T00:12:49.153Z","assignedTo":"123","status":"collecting"}
+{"id":"set_1","indices":[2,3,4,5,6],"completedAt":null,"assignedTo":"1234","assignedAt":"2026-03-06T05:04:00.785Z","status":"collecting"}
+{"id":"set_2","indices":[3,4,5,6,7],"completedAt":null,"assignedTo":"1234","assignedAt":"2026-03-06T07:06:22.135Z","status":"collecting"}
+{"id":"set_3","indices":[4,5,6,7,8],"completedAt":null,"assignedAt":"2026-02-20T00:08:38.509Z","assignedTo":"sfdsgfd","status":"collecting"}
+{"id":"set_4","indices":[5,6,7,8,9],"completedAt":null,"assignedTo":"1234","assignedAt":"2026-02-23T06:40:41.620Z","status":"collecting"}
+{"id":"suneung_set_0","type":"suneung","captionIndex":0,"indices":[2,3,4]}
+{"id":"suneung_set_1","type":"suneung","captionIndex":1,"indices":[2,3,4]}
+{"id":"suneung_set_2","type":"suneung","captionIndex":2,"indices":[2,3,4]}
+{"id":"suneung_set_3","type":"suneung","captionIndex":3,"indices":[2,3,4]}
