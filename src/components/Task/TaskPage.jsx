@@ -119,7 +119,7 @@ export default function TaskPage() {
       await saveTrialData(trialData);
 
       if (isLastTrial) {
-        navigate('/finish');
+        navigate('/review');
       } else {
         nextTrial();
         setResponses({});
@@ -172,7 +172,7 @@ export default function TaskPage() {
                   <strong>Pen:</strong> select Pen in the toolbar, then draw on the chart.
                 </li>
                 <li>
-                  <strong>Eraser:</strong> select Eraser and drag over pen strokes you drew; overlapping strokes are removed (does not remove the chart image).
+                  <strong>Eraser:</strong> select Eraser and drag over pen strokes you drew; overlapping strokes are removed.
                 </li>
                 <li>
                   <strong>Color:</strong> change the pen color from the Color menu at the top right of the toolbar.

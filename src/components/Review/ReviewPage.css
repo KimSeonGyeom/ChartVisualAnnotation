@@ -1,0 +1,261 @@
+.review-page {
+  min-height: 100vh;
+  background: #fafafa;
+}
+
+.review-header {
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  padding-top: 2rem;
+  padding-bottom: 1rem;
+  text-align: center;
+}
+
+.review-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 0.5rem 0;
+}
+
+.review-subtitle {
+  font-size: 1rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.review-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow-x: auto;
+}
+
+.review-trial-section {
+  margin-bottom: 3rem;
+}
+
+.review-caption-info {
+  margin-bottom: 0.5rem;
+}
+
+.review-caption-text,
+.review-intent-text {
+  font-size: 1.2rem;
+  color: #333;
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.review-caption-text strong,
+.review-intent-text strong {
+  color: #111;
+}
+
+.review-table {
+  width: 100%;
+  background: white;
+  border-collapse: collapse;
+  border: 1px solid #ddd;
+}
+
+.review-table thead {
+  background: #f5f5f5;
+}
+
+.review-table th {
+  padding: 0.5rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #333;
+  border: 1px solid #ddd;
+  vertical-align: middle;
+}
+
+.review-th-image {
+  width: 320px;
+}
+
+.review-th-narrow {
+  width: 20px;
+}
+
+.review-th-wide {
+  width: 20%;
+}
+
+.review-table th:last-child {
+  width: 20%;
+}
+
+.review-table td {
+  padding: 0 0.25rem;
+  border: 1px solid #ddd;
+  vertical-align: middle;
+  height: 200px;
+}
+
+.review-td-image {
+  text-align: center;
+  padding: 0.75rem;
+  vertical-align: middle;
+}
+
+.review-td-question {
+  padding: 0.75rem;
+  vertical-align: middle;
+}
+
+.review-row-img {
+  width: 100%;
+  /* max-width: 160px; */
+  min-height: 180px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.review-td-question.has-error {
+  background: #fef2f2;
+}
+
+.review-radio-comparison {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.review-radio-comparison input[type="radio"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.review-likert-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+}
+
+.review-likert-options {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  width: 200px;
+}
+
+.review-likert-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.review-likert-option input[type="radio"] {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  margin-top: 0.2rem;
+}
+
+.review-likert-num {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.review-likert-labels {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  font-size: 0.65rem;
+  color: #666;
+  margin-top: 0.2rem;
+  width: 200px;
+}
+
+.review-likert-label-left,
+.review-likert-label-center,
+.review-likert-label-right {
+  text-align: center;
+}
+
+.review-text-input {
+  width: 100%;
+  height: 100%;
+  padding: 0.5rem;
+  border: none;
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.review-text-input:focus {
+  outline: none;
+  border-color: #111;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.review-error-text {
+  display: block;
+  font-size: 0.75rem;
+  color: #ef4444;
+  margin-top: 0.25rem;
+}
+
+.review-error-banner {
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.95rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.review-submit-btn {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  display: block;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.review-submit-btn:hover:not(:disabled) {
+  background: #000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.review-submit-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.review-table {
+  min-width: 1200px;
+}

@@ -77,6 +77,33 @@
   line-height: 1.25;
 }
 
+/* System Requirements */
+.system-requirements {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+}
+
+.system-requirements h3 {
+  margin: 0 0 0.75rem 0;
+  color: #856404;
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.system-requirements p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  color: #856404;
+  line-height: 1.5;
+}
+
+.system-requirements p strong {
+  font-weight: 700;
+}
+
 /* Consent */
 .consent-content {
   margin-bottom: 1.5rem;

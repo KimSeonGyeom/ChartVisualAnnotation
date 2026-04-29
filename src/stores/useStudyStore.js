@@ -269,6 +269,50 @@ export const useStudyStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Save review data to Firebase
+   */
+  saveReviewData: async (reviewData) => {
+    const { sessionDocId } = get();
+    if (!sessionDocId) throw new Error('Session not initialized');
+
+    set({ isSubmitting: true });
+
+    try {
+      const reviewDocId = `${sessionDocId}_${reviewData.trialId}_review`;
+
+      await setDoc(doc(db, 'reviews', reviewDocId), {
+        sessionId: sessionDocId,
+        trialId: reviewData.trialId,
+        imageIndex: reviewData.imageIndex,
+        
+        reviewAnnotation: {
+          svg: reviewData.reviewAnnotation?.svg || null,
+          imageData: reviewData.reviewAnnotation?.imageData || null,
+        },
+        
+        reviewResponses: reviewData.reviewResponses || {},
+        
+        reviewDrawingActivitiesJson: reviewData.reviewDrawingActivities 
+          ? JSON.stringify(reviewData.reviewDrawingActivities) 
+          : null,
+        
+        reviewStrokeCount: reviewData.reviewStrokeCount || 0,
+        reviewTotalPathLength: reviewData.reviewTotalPathLength || 0,
+        reviewDurationMs: reviewData.reviewDurationMs || 0,
+        
+        submittedAt: serverTimestamp(),
+      });
+
+      return reviewDocId;
+    } catch (error) {
+      console.error('Failed to save review data:', error);
+      throw error;
+    } finally {
+      set({ isSubmitting: false });
+    }
+  },
+
   // ==================== ACTIONS: FINALIZE SESSION ====================
 
   /**

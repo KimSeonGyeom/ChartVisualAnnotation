@@ -105,7 +105,14 @@ export default function IntroductionPage() {
                 <li>Add visual highlights on the chart to help others understand the caption in a clear, friendly way</li>
                 <li>Answer a few questions about your highlights and experience</li>
                 <li>Repeat for several chart-caption pairs</li>
+                <li>Review and evaluate generated visual annotations for each chart</li>
               </ol>
+            </div>
+
+            <div className="system-requirements">
+              <h3>System Requirements:</h3>
+              <p><strong>This study requires a screen width of at least 1200px (laptop or desktop).</strong></p>
+              <p>Please use a laptop or desktop computer. Mobile devices and tablets are not supported.</p>
             </div>
           </section>
 
