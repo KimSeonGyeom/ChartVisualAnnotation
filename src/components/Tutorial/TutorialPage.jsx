@@ -4,6 +4,8 @@ import ChartCanvas from '../Task/ChartCanvas';
 import PenToolbar from '../Task/PenToolbar';
 import { useDrawingStore } from '../../stores/useDrawingStore';
 import { useStudyStore } from '../../stores/useStudyStore';
+import { ref, uploadString } from 'firebase/storage';
+import { storage } from '../../services/firebase';
 import studyConfig from '../../config/study.json';
 import '../Task/TaskPage.css';
 import './TutorialPage.css';
@@ -61,7 +63,7 @@ export default function TutorialPage() {
 
   const handleStartTask = async () => {
     setSaveError('');
-    const { sessionDocId, completeTrial, saveTrialData } = useStudyStore.getState();
+    const { sessionDocId, completeTrial } = useStudyStore.getState();
 
     if (!sessionDocId) {
       navigate('/task');
@@ -71,20 +73,15 @@ export default function TutorialPage() {
     setIsSaving(true);
     try {
       completeTrial(TUTORIAL_TRIAL_ID);
+      
+      // Save tutorial image to Storage only (not Firestore)
       const canvasData = canvasActionsRef.current?.export();
-      const stats = getStats();
-      const activities = getActivities();
-
-      await saveTrialData({
-        trialId: TUTORIAL_TRIAL_ID,
-        imageIndex: TUTORIAL_IMAGE_INDEX,
-        annotation: canvasData,
-        responses: {},
-        drawingActivities: activities,
-        strokeCount: stats.strokeCount,
-        totalPathLength: stats.totalPathLength,
-        durationMs: stats.trialDurationMs,
-      });
+      if (canvasData?.imageData) {
+        const storageRef = ref(storage, `tutorials/${sessionDocId}_tutorial.jpg`);
+        await uploadString(storageRef, canvasData.imageData, 'data_url');
+        console.log('Tutorial image saved to Storage');
+      }
+      
       navigate('/task');
     } catch (err) {
       console.error('Failed to save tutorial practice:', err);

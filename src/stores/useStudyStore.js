@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { 
   doc, setDoc, updateDoc, getDoc, runTransaction, serverTimestamp 
 } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../services/firebase';
 
 const NUM_SETS = 4; // suneung_set_0 ~ suneung_set_3
 
@@ -231,6 +232,15 @@ export const useStudyStore = create((set, get) => ({
     try {
       const timing = get().trialTimings.find(t => t.trialId === trialData.trialId);
       const trialDocId = `${sessionDocId}_${trialData.trialId}`;
+      let annotationImageUrl = null;
+
+      // Store annotation image in Firebase Storage (not Firestore base64)
+      if (trialData.annotation?.imageData) {
+        const annotationPath = `annotations/${sessionDocId}/${trialData.trialId}.jpg`;
+        const annotationRef = ref(storage, annotationPath);
+        await uploadString(annotationRef, trialData.annotation.imageData, 'data_url');
+        annotationImageUrl = await getDownloadURL(annotationRef);
+      }
 
       await setDoc(doc(db, 'trials', trialDocId), {
         sessionId: sessionDocId,
@@ -244,8 +254,7 @@ export const useStudyStore = create((set, get) => ({
         },
         
         annotation: {
-          svg: trialData.annotation?.svg || null,
-          imageData: trialData.annotation?.imageData || null,
+          imageUrl: annotationImageUrl,
         },
         
         responses: trialData.responses || {},

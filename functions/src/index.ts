@@ -69,11 +69,20 @@ export const processTrialAnnotation = onDocumentCreated(
       }
 
       // Prepare input for Gemini
+      const userDrawingImageUrl = trialData.annotation?.imageUrl;
+      if (!userDrawingImageUrl) {
+        throw new Error(
+          `Missing required human drawing image URL for trial ${trialDocId}. ` +
+          `Expected trials/{id}.annotation.imageUrl to be present.`
+        );
+      }
+
       const inputData = {
         chartIndex: chartIndex,
         imageUrl: `/suneung_images/suneung${chartIndex}.png`,
         caption: trialData.caption || '',
-        userDrawingBase64: trialData.annotation?.imageData || '',
+        // Human drawing is mandatory for the "with drawing" generation path.
+        userDrawingBase64: userDrawingImageUrl,
         userIntent: trialData.responses?.drawing_help_intent || '',
         prolificId: prolificId, // Include worker ID for logging
         apiKey: geminiApiKey.value(), // Pass API key from secret

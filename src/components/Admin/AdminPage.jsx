@@ -1,7 +1,65 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import { db } from '../../services/firebase';
+import { ref, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../../services/firebase';
 import './AdminPage.css';
+
+function TutorialDetail({ sessionId, prolificId }) {
+  const [tutorialImageUrl, setTutorialImageUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchTutorialImage = async () => {
+      try {
+        const storageRef = ref(storage, `tutorials/${sessionId}_tutorial.jpg`);
+        const url = await getDownloadURL(storageRef);
+        setTutorialImageUrl(url);
+      } catch (err) {
+        console.error('Failed to load tutorial image:', err);
+        setError('No tutorial image found');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTutorialImage();
+  }, [sessionId]);
+
+  return (
+    <>
+      <h2 className="admin-detail-title">
+        {prolificId} - Tutorial Practice
+      </h2>
+
+      <section className="admin-section">
+        <h3>Tutorial Drawing</h3>
+        {loading ? (
+          <p>Loading...</p>
+        ) : error ? (
+          <p className="admin-empty">{error}</p>
+        ) : (
+          <img
+            className="admin-annotation-img"
+            src={tutorialImageUrl}
+            alt="Tutorial practice drawing"
+          />
+        )}
+      </section>
+
+      <section className="admin-section">
+        <h3>Info</h3>
+        <table className="admin-table">
+          <tbody>
+            <tr><td className="admin-table-key">Prolific ID</td><td>{prolificId}</td></tr>
+            <tr><td className="admin-table-key">Session</td><td>{sessionId}</td></tr>
+            <tr><td className="admin-table-key">Type</td><td>Tutorial Practice</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </>
+  );
+}
 
 export default function AdminPage() {
   const [trials, setTrials] = useState([]);
@@ -115,6 +173,17 @@ export default function AdminPage() {
                       ({workerTrials.length} trials)
                     </span>
                   </div>
+                  {/* Tutorial */}
+                  {sessionId && (
+                    <div
+                      key={`${sessionId}_tutorial`}
+                      className={`admin-list-item ${selected?.id === `${sessionId}_tutorial` ? 'active' : ''}`}
+                      onClick={() => setSelected({ id: `${sessionId}_tutorial`, type: 'tutorial', sessionId, prolificId })}
+                    >
+                      <div className="admin-list-item-id">Tutorial</div>
+                      <div className="admin-list-item-meta">Practice</div>
+                    </div>
+                  )}
                   {workerTrials.map(trial => (
                     <div
                       key={trial.id}
@@ -176,7 +245,9 @@ export default function AdminPage() {
         {/* Right: detail */}
         <div className="admin-detail">
           {!selected ? (
-            <div className="admin-placeholder">← Select a trial or review to view details</div>
+            <div className="admin-placeholder">← Select a trial, tutorial, or review to view details</div>
+          ) : selected.type === 'tutorial' ? (
+            <TutorialDetail sessionId={selected.sessionId} prolificId={selected.prolificId} />
           ) : selected.type === 'review' ? (
             <>
               <h2 className="admin-detail-title">
@@ -188,12 +259,14 @@ export default function AdminPage() {
                 <h3>Review Responses</h3>
                 <table className="admin-table">
                   <tbody>
-                    {Object.entries(selected.review.responses || {}).map(([key, value]) => (
-                      <tr key={key}>
-                        <td className="admin-table-key">{key}</td>
-                        <td>{String(value)}</td>
-                      </tr>
-                    ))}
+                    {Object.entries(selected.review.responses || {})
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([key, value]) => (
+                        <tr key={key}>
+                          <td className="admin-table-key">{key}</td>
+                          <td>{String(value)}</td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
                 {selected.review.submittedAt && (
@@ -285,10 +358,10 @@ export default function AdminPage() {
               {/* Original Annotation Image */}
               <section className="admin-section">
                 <h3>Original Worker Drawing</h3>
-                {selected.annotation?.imageData ? (
+                {(selected.annotation?.imageUrl || selected.annotation?.imageData) ? (
                   <img
                     className="admin-annotation-img"
-                    src={selected.annotation.imageData}
+                    src={selected.annotation.imageUrl || selected.annotation.imageData}
                     alt="annotation"
                   />
                 ) : (
@@ -317,12 +390,14 @@ export default function AdminPage() {
                   return Object.keys(details).length > 0 ? (
                     <table className="admin-table">
                       <tbody>
-                        {Object.entries(details).map(([k, v]) => (
-                          <tr key={k}>
-                            <td className="admin-table-key">{k}</td>
-                            <td>{String(v)}</td>
-                          </tr>
-                        ))}
+                        {Object.entries(details)
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([k, v]) => (
+                            <tr key={k}>
+                              <td className="admin-table-key">{k}</td>
+                              <td>{String(v)}</td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   ) : (

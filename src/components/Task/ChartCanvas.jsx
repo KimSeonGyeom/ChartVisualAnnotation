@@ -534,48 +534,46 @@ export default function ChartCanvas({
 
     canvas.renderAll();
 
-    /** Logical size (matches CSS / underlay). Fabric backing store is often larger when retina scaling is on. */
+    /** Current display size */
     const lw = canvas.getWidth();
     const lh = canvas.getHeight();
 
+    /** Use natural (original) size for export */
+    const nw = layout.nw || lw;
+    const nh = layout.nh || lh;
+    
     const out = document.createElement('canvas');
-    out.width = lw;
-    out.height = lh;
+    out.width = nw;  // Export at original size
+    out.height = nh;
     const ctx = out.getContext('2d');
 
     if (imgEl?.complete && layout.dw > 0 && imgEl.naturalWidth) {
-      ctx.drawImage(
-        imgEl,
-        0,
-        0,
-        layout.nw,
-        layout.nh,
-        layout.left,
-        layout.top,
-        layout.dw,
-        layout.dh
-      );
+      // Draw chart at original size
+      ctx.drawImage(imgEl, 0, 0, nw, nh);
     } else {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, out.width, out.height);
     }
 
+    // Scale drawings to match original size
+    const scaleX = nw / lw;
+    const scaleY = nh / lh;
+    
     const lower = canvas.lowerCanvasEl;
     const upper = canvas.upperCanvasEl;
     if (lower) {
-      ctx.drawImage(lower, 0, 0, lower.width, lower.height, 0, 0, lw, lh);
+      ctx.drawImage(lower, 0, 0, lower.width, lower.height, 0, 0, nw, nh);
     }
     if (upper) {
-      ctx.drawImage(upper, 0, 0, upper.width, upper.height, 0, 0, lw, lh);
+      ctx.drawImage(upper, 0, 0, upper.width, upper.height, 0, 0, nw, nh);
     }
 
-    const raw = out.toDataURL('image/jpeg', 1);
+    const raw = out.toDataURL('image/jpeg', 0.92);
     const imageData = raw.startsWith('data:')
       ? raw
       : `data:image/jpeg;base64,${raw}`;
 
     return {
-      svg: canvas.toSVG(),
       imageData,
     };
   }, []);
