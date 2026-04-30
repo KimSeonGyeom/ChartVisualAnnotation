@@ -3,6 +3,99 @@
   background: #fafafa;
 }
 
+.admin-login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 360px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.admin-login-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: #111;
+}
+
+.admin-login-desc {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.admin-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-login-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.admin-login-input {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.admin-login-input:focus {
+  outline: none;
+  border-color: #111;
+}
+
+.admin-login-error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #d32f2f;
+}
+
+.admin-login-submit {
+  margin-top: 0.5rem;
+  padding: 0.65rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background: #111;
+  color: #fff;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.admin-login-submit:hover {
+  background: #333;
+}
+
+.admin-logout-btn {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  color: #555;
+}
+
+.admin-logout-btn:hover {
+  background: #fafafa;
+  border-color: #ccc;
+}
+
 .admin-loading,
 .admin-error {
   padding: 3rem;
@@ -35,6 +128,62 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem 1rem;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.admin-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fafafa;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.admin-tab:hover {
+  background: #f3f3f3;
+  border-color: #ccc;
+}
+
+.admin-tab.active {
+  background: #f0f4ff;
+  border-color: #111;
+}
+
+.admin-tab-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111;
+}
+
+.admin-tab-hint {
+  font-size: 0.7rem;
+  color: #888;
+  font-weight: 400;
+  line-height: 1.2;
+  max-width: 11rem;
+}
+
+.admin-tab-count {
+  font-size: 0.75rem;
+  color: #555;
+  margin-top: 0.1rem;
 }
 
 .admin-count {
@@ -94,7 +243,7 @@
 }
 
 .admin-list-item {
-  padding: 0.75rem 1rem 0.75rem 1.5rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.5rem;
   cursor: pointer;
   border-bottom: 1px solid #f5f5f5;
   transition: background 0.15s;
@@ -228,6 +377,29 @@
   white-space: nowrap;
 }
 
+.admin-details-in-panel {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.admin-details-in-panel .admin-table-key {
+  width: 100px;
+}
+
+/* Caption/responses under Details & Gen Status — slightly larger (~+3pt); gen status rows stay default size */
+.admin-details-text-panel {
+  margin-top: 0.25rem;
+}
+
+.admin-details-text-panel .admin-details-in-panel {
+  margin-top: 0;
+  font-size: calc(0.8rem + 3pt);
+}
+
+.admin-details-text-panel > .admin-empty {
+  font-size: calc(0.85rem + 3pt);
+}
+
 /* Caption box */
 .admin-caption-box {
   padding: 0.75rem 1rem;
@@ -239,12 +411,22 @@
   color: #333;
 }
 
-/* Generation info */
+/* Trial detail: 2×2 grid — original | generation status, then v1 | v2 */
+.admin-trial-visual-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.admin-generation-info--panel {
+  margin-bottom: 0;
+}
+
 .admin-generation-info {
   background: #fafafa;
-  padding: 1rem;
+  padding: 0.5rem;
   border-radius: 4px;
-  margin-bottom: 1rem;
   border: 1px solid #f0f0f0;
 }
 
@@ -267,14 +449,6 @@
 
 .admin-gen-error {
   color: #d32f2f;
-}
-
-/* Generated images */
-.admin-generated-images {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-top: 1rem;
 }
 
 .admin-gen-image-container h4 {
