@@ -14,6 +14,9 @@ export default function ReviewPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [trialIntents, setTrialIntents] = useState({});
+  const [generationStatus, setGenerationStatus] = useState({});
+  const [generatedImages, setGeneratedImages] = useState({});
+  const [rowOrder, setRowOrder] = useState({});
 
   const { 
     participant,
@@ -24,6 +27,16 @@ export default function ReviewPage() {
   } = useStudyStore();
 
   const stimuli = getSetStimuli();
+
+  // Generate random order for each stimulus (once on mount)
+  useEffect(() => {
+    const orders = {};
+    stimuli.forEach(stimulus => {
+      // Randomly decide if Version 1 comes first (true) or Version 2 comes first (false)
+      orders[stimulus.id] = Math.random() < 0.5;
+    });
+    setRowOrder(orders);
+  }, []);
 
   useEffect(() => {
     if (!participant || !assignedSet || stimuli.length === 0) {
@@ -53,8 +66,78 @@ export default function ReviewPage() {
     }
   }, [participant, assignedSet, stimuli, sessionDocId, navigate]);
 
-  const handleResponseChange = (trialId, chartIndex, questionId, value) => {
-    const key = `${trialId}_${chartIndex}_${questionId}`;
+  // Polling for generation status (5초마다 확인, 모두 완료되면 중단)
+  useEffect(() => {
+    if (!sessionDocId || stimuli.length === 0) return;
+
+    let intervalId = null;
+
+    const checkGenerationStatus = async () => {
+      let allCompleted = true;
+
+      for (const stimulus of stimuli) {
+        const trialDocId = `${sessionDocId}_${stimulus.id}`;
+        
+        try {
+          const docSnap = await getDoc(doc(db, 'trials', trialDocId));
+          
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            const generation = data.generation || {};
+            
+            setGenerationStatus(prev => ({
+              ...prev,
+              [stimulus.id]: generation.status || 'pending'
+            }));
+
+            if (generation.status === 'completed') {
+              setGeneratedImages(prev => ({
+                ...prev,
+                [stimulus.id]: {
+                  url1: generation.reviewImageUrl1,
+                  url2: generation.reviewImageUrl2,
+                }
+              }));
+            } else if (generation.status === 'processing' || generation.status === 'pending' || !generation.status) {
+              allCompleted = false;
+            }
+
+            if (generation.status === 'failed') {
+              console.error(`Generation failed for ${stimulus.id}:`, generation.errorMessage);
+            }
+          } else {
+            allCompleted = false;
+          }
+        } catch (error) {
+          console.error(`Error checking trial ${stimulus.id}:`, error);
+          allCompleted = false;
+        }
+      }
+
+      // 모두 완료되면 polling 중단
+      if (allCompleted && intervalId) {
+        clearInterval(intervalId);
+        console.log('All generations completed, stopping polling');
+      }
+    };
+
+    // 초기 확인
+    checkGenerationStatus();
+
+    // 5초마다 확인
+    intervalId = setInterval(checkGenerationStatus, 5000);
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [sessionDocId, stimuli]);
+
+  const handleResponseChange = (trialId, questionId, value, chartIndex = null) => {
+    const key = chartIndex !== null 
+      ? `${trialId}_${chartIndex}_${questionId}`
+      : `${trialId}_${questionId}`;
     setResponses(prev => ({ ...prev, [key]: value }));
     if (errors[key]) {
       setErrors(prev => ({ ...prev, [key]: null }));
@@ -65,15 +148,35 @@ export default function ReviewPage() {
     const reviewQuestions = questionsConfig.review?.questions || [];
     const newErrors = {};
     
+    // Check if any images are still generating
+    const stillGenerating = stimuli.some(stimulus => {
+      const status = generationStatus[stimulus.id];
+      return status === 'processing' || status === 'pending' || !status;
+    });
+
+    if (stillGenerating) {
+      setError('Please wait for all annotations to finish generating before submitting.');
+      return false;
+    }
+    
     stimuli.forEach(stimulus => {
+      const status = generationStatus[stimulus.id];
+      
+      // Skip validation for stimuli that are still generating or failed
+      if (status === 'processing' || status === 'pending' || !status) {
+        return;
+      }
+
       reviewQuestions.forEach(q => {
         if (q.required) {
           if (q.type === 'radio_comparison') {
+            // Radio comparison: one answer per stimulus
             const key = `${stimulus.id}_${q.id}`;
             if (!responses[key]) {
               newErrors[key] = 'Required';
             }
           } else {
+            // Likert and text: one answer per chart (2 charts per stimulus)
             [1, 2].forEach(chartIndex => {
               const key = `${stimulus.id}_${chartIndex}_${q.id}`;
               if (!responses[key]) {
@@ -103,6 +206,7 @@ export default function ReviewPage() {
       const reviewData = {
         responses: responses,
         trials: stimuli.map(s => s.id),
+        rowOrder: rowOrder, // Save the randomized order for each stimulus
       };
 
       await saveReviewData(reviewData);
@@ -116,26 +220,23 @@ export default function ReviewPage() {
     }
   };
 
-  const renderQuestionCell = (trialId, chartIndex, question) => {
-    const key = `${trialId}_${chartIndex}_${question.id}`;
+  const renderQuestionCell = (trialId, chartIndex, question, isGenerating) => {
+    const key = question.type === 'radio_comparison' 
+      ? `${trialId}_${question.id}`
+      : `${trialId}_${chartIndex}_${question.id}`;
     
     switch (question.type) {
       case 'radio_comparison':
-        const comparisonKey = `${trialId}_${question.id}`;
         return (
-          <div className="review-radio-comparison">
+          <div className="review-radio-cell">
             <input
               type="radio"
-              name={comparisonKey}
+              name={`${trialId}_${question.id}`}
               value={chartIndex}
-              checked={responses[comparisonKey] === chartIndex}
-              onChange={() => {
-                setResponses(prev => ({ ...prev, [comparisonKey]: chartIndex }));
-                if (errors[comparisonKey]) {
-                  setErrors(prev => ({ ...prev, [comparisonKey]: null }));
-                }
-              }}
-              disabled={isSubmitting}
+              checked={responses[key] === chartIndex}
+              onChange={() => handleResponseChange(trialId, question.id, chartIndex)}
+              disabled={isSubmitting || isGenerating}
+              className="review-radio-input"
             />
           </div>
         );
@@ -152,8 +253,8 @@ export default function ReviewPage() {
                     name={key}
                     value={value}
                     checked={responses[key] === value}
-                    onChange={() => handleResponseChange(trialId, chartIndex, question.id, value)}
-                    disabled={isSubmitting}
+                    onChange={() => handleResponseChange(trialId, question.id, value, chartIndex)}
+                    disabled={isSubmitting || isGenerating}
                   />
                 </label>
               ))}
@@ -172,10 +273,10 @@ export default function ReviewPage() {
         return (
           <textarea
             value={responses[key] || ''}
-            onChange={(e) => handleResponseChange(trialId, chartIndex, question.id, e.target.value)}
-            placeholder={question.placeholder || ''}
+            onChange={(e) => handleResponseChange(trialId, question.id, e.target.value, chartIndex)}
+            placeholder={isGenerating ? 'Please wait for image generation...' : (question.placeholder || '')}
             maxLength={question.maxLength || 500}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isGenerating}
             className="review-text-input"
             rows={3}
           />
@@ -222,7 +323,7 @@ export default function ReviewPage() {
             <table className="review-table">
               <thead>
                 <tr>
-                  <th className="review-th-image">Annotated Charts</th>
+                  <th className="review-th-image">Generated Annotations</th>
                   {reviewQuestions.map(q => (
                     <th 
                       key={q.id} 
@@ -234,19 +335,51 @@ export default function ReviewPage() {
                 </tr>
               </thead>
               <tbody>
-                {[1, 2].map(chartIndex => {
-                  const imageUrl = chartIndex === 1 
-                    ? (stimulus.reviewImageUrl1 || stimulus.imageUrl)
-                    : (stimulus.reviewImageUrl2 || stimulus.imageUrl);
+                {[1, 2].map(displayIndex => {
+                  const status = generationStatus[stimulus.id];
+                  const images = generatedImages[stimulus.id];
+                  // Only disable if actively processing
+                  const isGenerating = status === 'processing';
+                  
+                  // Determine actual chartIndex based on randomized order
+                  // If rowOrder[stimulus.id] is true: display order is [1, 2]
+                  // If rowOrder[stimulus.id] is false: display order is [2, 1]
+                  const chartIndex = rowOrder[stimulus.id] 
+                    ? displayIndex 
+                    : (3 - displayIndex); // 1->2, 2->1
+                  
+                  // Determine which image to show
+                  let imageUrl = stimulus.imageUrl; // Fallback
+                  if (status === 'completed' && images) {
+                    // chartIndex 1: version without worker drawing
+                    // chartIndex 2: version with worker drawing
+                    imageUrl = chartIndex === 1 ? images.url1 : images.url2;
+                  }
 
                   return (
-                    <tr key={chartIndex}>
+                    <tr key={displayIndex} className={isGenerating ? 'review-row-disabled' : ''}>
                       <td className="review-td-image">
-                        <img 
-                          src={imageUrl}
-                          alt={`Annotated chart ${index + 1}-${chartIndex}`}
-                          className="review-row-img"
-                        />
+                        {isGenerating ? (
+                          <div className="generation-loading">
+                            <div className="spinner"></div>
+                            <p>Generating annotation...</p>
+                          </div>
+                        ) : status === 'failed' ? (
+                          <div className="generation-error">
+                            <p>⚠️ Generation failed</p>
+                            <img 
+                              src={stimulus.imageUrl}
+                              alt={`Original chart ${index + 1}`}
+                              className="review-row-img"
+                            />
+                          </div>
+                        ) : (
+                          <img 
+                            src={imageUrl}
+                            alt={`Annotated chart ${index + 1}-${chartIndex}`}
+                            className="review-row-img"
+                          />
+                        )}
                       </td>
 
                     {reviewQuestions.map(q => {
@@ -256,10 +389,10 @@ export default function ReviewPage() {
                       return (
                         <td 
                           key={q.id} 
-                          className={`review-td-question ${errors[key] ? 'has-error' : ''}`}
+                          className={`review-td-question ${errors[key] ? 'has-error' : ''} ${isGenerating ? 'disabled' : ''}`}
                         >
-                          {renderQuestionCell(stimulus.id, chartIndex, q)}
-                          {errors[key] && (
+                          {renderQuestionCell(stimulus.id, chartIndex, q, isGenerating)}
+                          {errors[key] && !isGenerating && (
                             <span className="review-error-text">{errors[key]}</span>
                           )}
                         </td>
@@ -273,6 +406,24 @@ export default function ReviewPage() {
           </div>
         ))}
 
+        {/* Generation status summary */}
+        {(() => {
+          const generatingCount = stimuli.filter(s => {
+            const status = generationStatus[s.id];
+            return status === 'processing' || status === 'pending' || !status;
+          }).length;
+          
+          if (generatingCount > 0) {
+            return (
+              <div className="review-status-banner">
+                <div className="spinner-small"></div>
+                <span>Generating {generatingCount} annotation{generatingCount > 1 ? 's' : ''}... Please wait before submitting.</span>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
         {error && (
           <div className="review-error-banner">
             {error}
@@ -282,7 +433,10 @@ export default function ReviewPage() {
         <button
           className="review-submit-btn"
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || stimuli.some(s => {
+            const status = generationStatus[s.id];
+            return status === 'processing' || status === 'pending' || !status;
+          })}
         >
           {isSubmitting ? 'Saving...' : 'Submit Review'}
         </button>

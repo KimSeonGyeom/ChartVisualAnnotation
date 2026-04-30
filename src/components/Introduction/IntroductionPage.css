@@ -25,9 +25,11 @@
   margin-bottom: 0.5rem;
 }
 
-.estimated-time {
+.estimated-time,
+.compensation {
   color: #888;
   font-size: 1.125rem;
+  margin: 0.25rem 0;
 }
 
 /* Sections */
@@ -44,9 +46,9 @@
 }
 
 .study-description p {
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
   font-size: 1.125rem;
-  line-height: 1.25;
+  line-height: 1.6;
 }
 
 /* Instructions */
@@ -70,9 +72,9 @@
 
 .instructions li {
   color: #444;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
   font-size: 1.125rem;
-  line-height: 1.25;
+  line-height: 1.6;
 }
 
 /* Consent */
@@ -81,8 +83,9 @@
 }
 
 .consent-content p {
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.75rem;
   font-size: 1.125rem;
+  line-height: 1.6;
   color: #444;
 }
 
@@ -104,7 +107,7 @@
 .consent-checkbox span {
   color: #444;
   font-size: 1.125rem;
-  line-height: 1.2;
+  line-height: 1.6;
 }
 
 /* Forms */

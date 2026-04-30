@@ -90,6 +90,9 @@ export default function IntroductionPage() {
           <p className="estimated-time">
             Estimated time: ~{studyConfig.estimatedMinutes} minutes
           </p>
+          <p className="compensation">
+            Compensation: You will receive £4.00 for completing this study.
+          </p>
         </header>
 
         <form onSubmit={handleSubmit}>
@@ -102,15 +105,14 @@ export default function IntroductionPage() {
               <h3>What you will do:</h3>
               <ol>
                 <li>View a chart image with a caption describing an insight</li>
-                <li>Add visual highlights on the chart to help others understand the caption in a clear, friendly way</li>
-                <li>Answer a few questions about your highlights and experience</li>
-                <li>Repeat for several chart-caption pairs</li>
+                <li>Draw visual highlights on the chart based on your intent and explain your intent in text</li>
+                <li>Repeat for 3 chart-caption pairs</li>
                 <li>Review and evaluate generated visual annotations for each chart</li>
               </ol>
             </div>
 
             <p>
-              This study is designed for laptop/desktop screens (recommended width: 1200px or wider). Please use a display setting where no horizontal scrolling is needed.
+              <strong>System Requirements:</strong> This study is designed for laptop/desktop screens (recommended width: 1200px or wider). Please use a display setting where no horizontal scrolling is needed.
             </p>
           </section>
 
@@ -118,9 +120,19 @@ export default function IntroductionPage() {
           <section className="consent-section">
             <h2>{consent.title}</h2>
             <div className="consent-content">
-              {consent.content.map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              ))}
+              <p>
+                Your responses will be collected and stored without directly identifying information. Your Prolific ID will be collected only for compensation and to identify your submitted data.
+                The collected data may be used in academic publications and shared in anonymized form.
+              </p>
+              <p>
+                There are no known risks beyond those encountered in everyday computer use.
+              </p>
+              <p>
+                You may withdraw at any time; however, partial compensation may not be provided if the study is not completed.
+              </p>
+              <p>
+                If you have any questions about this study, please contact the research team via Prolific messages.
+              </p>
             </div>
             <label className="consent-checkbox">
               <input

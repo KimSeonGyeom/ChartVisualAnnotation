@@ -33,6 +33,115 @@
   overflow-x: auto;
 }
 
+.generation-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.generation-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #2196F3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.75rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.generation-loading p {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+}
+
+.generation-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+}
+
+.generation-error p {
+  font-size: 0.85rem;
+  color: #856404;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.generation-error img {
+  max-width: 100%;
+  opacity: 0.7;
+}
+
+/* Disabled row styling */
+.review-row-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.review-td-question.disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.review-td-question.disabled input,
+.review-td-question.disabled textarea {
+  cursor: not-allowed;
+  background-color: #fafafa;
+  color: #999;
+}
+
+.review-td-question.disabled .review-likert-option {
+  opacity: 0.5;
+}
+
+.review-text-input:disabled {
+  background-color: #fafafa;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* Status banner */
+.review-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  margin: 2rem auto;
+  max-width: 600px;
+  background: #e3f2fd;
+  border: 1px solid #2196F3;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: #1565c0;
+  font-weight: 500;
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #bbdefb;
+  border-top-color: #2196F3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
 .review-trial-section {
   margin-bottom: 3rem;
 }
@@ -80,7 +189,7 @@
 }
 
 .review-th-narrow {
-  width: 20px;
+  width: 40px;
 }
 
 .review-th-wide {
@@ -103,6 +212,8 @@
   padding: 0.75rem;
   vertical-align: middle;
 }
+
+/* Image label removed - users should not know which version has drawing */
 
 .review-td-question {
   padding: 0.75rem;
@@ -129,10 +240,17 @@
   align-items: center;
 }
 
-.review-radio-comparison input[type="radio"] {
+.review-radio-comparison input[type="radio"],
+.review-radio-input {
   cursor: pointer;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
+}
+
+.review-radio-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .review-likert-cell {
@@ -158,8 +276,8 @@
 
 .review-likert-option input[type="radio"] {
   cursor: pointer;
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
   margin-top: 0.2rem;
 }
 

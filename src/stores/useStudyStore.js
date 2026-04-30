@@ -279,28 +279,14 @@ export const useStudyStore = create((set, get) => ({
     set({ isSubmitting: true });
 
     try {
-      const reviewDocId = `${sessionDocId}_${reviewData.trialId}_review`;
+      // Save a single review document for the entire session
+      const reviewDocId = `${sessionDocId}_review`;
 
       await setDoc(doc(db, 'reviews', reviewDocId), {
         sessionId: sessionDocId,
-        trialId: reviewData.trialId,
-        imageIndex: reviewData.imageIndex,
-        
-        reviewAnnotation: {
-          svg: reviewData.reviewAnnotation?.svg || null,
-          imageData: reviewData.reviewAnnotation?.imageData || null,
-        },
-        
-        reviewResponses: reviewData.reviewResponses || {},
-        
-        reviewDrawingActivitiesJson: reviewData.reviewDrawingActivities 
-          ? JSON.stringify(reviewData.reviewDrawingActivities) 
-          : null,
-        
-        reviewStrokeCount: reviewData.reviewStrokeCount || 0,
-        reviewTotalPathLength: reviewData.reviewTotalPathLength || 0,
-        reviewDurationMs: reviewData.reviewDurationMs || 0,
-        
+        trials: reviewData.trials || [],
+        responses: reviewData.responses || {},
+        rowOrder: reviewData.rowOrder || {},
         submittedAt: serverTimestamp(),
       });
 

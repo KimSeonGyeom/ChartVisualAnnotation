@@ -160,7 +160,7 @@ export default function TaskPage() {
       <main className="task-content">
         <div className="task-instruction-row">
           <p className="canvas-instruction-main">
-            Read the caption below and use visual highlights on the chart to help others understand the caption in a clear, friendly way. Then, please answer the survey on the right.
+            Read the caption below and draw visual highlights on the chart to help others understand the caption in a clear, friendly way. Then, please answer the survey on the right.
           </p>
         </div>
 

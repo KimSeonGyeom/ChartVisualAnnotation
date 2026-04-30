@@ -1,5 +1,15 @@
 [
   {
+    "id": 0,
+    "filename": "suneung0.png",
+    "captions": [
+      "The percentage of people in the 18-29 group who said they had read a print book was 74%, which was the highest among the four groups.",
+      "While 34% of people in the 18-29 group said they had read an e-book, the percentage of people who said so was below 20% in the 65 and up group.",
+      "In all age groups, the percentage of people who said they had read an e-book was higher than that of people who said they had listened to an audiobook.",
+      "Among the four age groups, the 30-49 group had the highest percentage of people who said they had listened to an audiobook."
+    ]
+  },
+  {
     "id": 1,
     "filename": "suneung1.png",
     "captions": [
@@ -13,10 +23,10 @@
     "id": 2,
     "filename": "suneung2.png",
     "captions": [
-      "The percentage of people in the 18-29 group who said they had read a print book was 74%, which was the highest among the four groups.",
-      "While 34% of people in the 18-29 group said they had read an e-book, the percentage of people who said so was below 20% in the 65 and up group.",
-      "In all age groups, the percentage of people who said they had read an e-book was higher than that of people who said they had listened to an audiobook.",
-      "Among the four age groups, the 30-49 group had the highest percentage of people who said they had listened to an audiobook."
+      "The year 2012 saw an overall percentage increase in each category of posted personal information.",
+      "In both years, the percentage of the young Americans who posted photos of themselves was the highest of all the categories.",
+      "In 2006, the percentage of those who posted city or town names was higher than that of those who posted school names.",
+      "Compared to 2006, 2012 recorded an eighteen percent increase in the category of cell phone numbers."
     ]
   },
   {
@@ -93,10 +103,10 @@
     "id": 10,
     "filename": "suneung10.png",
     "captions": [
-      "The year 2012 saw an overall percentage increase in each category of posted personal information.",
-      "In both years, the percentage of the young Americans who posted photos of themselves was the highest of all the categories.",
-      "In 2006, the percentage of those who posted city or town names was higher than that of those who posted school names.",
-      "Compared to 2006, 2012 recorded an eighteen percent increase in the category of cell phone numbers."
+      "NOTE: This file no longer exists - content was moved to suneung2.png (id: 2)",
+      "",
+      "",
+      ""
     ]
   }
 ]

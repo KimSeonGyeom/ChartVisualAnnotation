@@ -9,13 +9,13 @@ import '../Task/TaskPage.css';
 import './TutorialPage.css';
 
 const TUTORIAL_CAPTION =
-  'In 2015 and 2017, Mozart was the most performed composer, with more than 3,000 performances each year.';
+  'The percentage of people in the 18-29 group who said they had read a print book was 74%, which was the highest among the four groups.';
 
-const PRACTICE_CHART_URL = '/suneung_images/suneung1.png';
+const PRACTICE_CHART_URL = '/suneung_images/suneung0.png';
 
-/** Same trial id / image index as practice chart (suneung1.png) for Firestore `trials` docs. */
+/** Tutorial uses a dedicated image that won't appear in actual tasks */
 const TUTORIAL_TRIAL_ID = 'tutorial_practice';
-const TUTORIAL_IMAGE_INDEX = 1;
+const TUTORIAL_IMAGE_INDEX = 0; // Index 0 reserved for tutorial, not used in task sets
 
 /** Match right-column example image max width so both columns align; height follows chart aspect ratio (no letterboxing). */
 const PRACTICE_DISPLAY_MAX_W = 520;
@@ -98,17 +98,30 @@ export default function TutorialPage() {
     <div className="tutorial-page">
       <div className="tutorial-container">
         <h1 className="tutorial-title">Tutorial and Practice</h1>
-
-        <p className="tutorial-desc">
-          In this task, you will be given <strong>three pairs of a chart image and a caption sentence</strong>.
-          <br />
-          Your goal is to draw <strong>visual highlights</strong> on the original <strong>chart image</strong> so that you{' '}
-          <strong>help others understand the caption in a clear, friendly way</strong>.
-        </p>
-
         <div className="tutorial-visual-emphasis">
           <div className="tutorial-images-section">
-            <h2 className="tutorial-section-label">Image</h2>
+            <h2 className="tutorial-section-label">Drawing Tool Instructions</h2>
+            <div className="canvas-instruction">
+              <ul className="canvas-instruction-list">
+                <li>
+                  <strong>Pen:</strong> select Pen in the toolbar, then draw on the chart.
+                </li>
+                <li>
+                  <strong>Eraser:</strong> select Eraser and drag over pen strokes you drew; overlapping strokes are removed.
+                </li>
+                <li>
+                  <strong>Color:</strong> change the pen color from the Color menu at the top right of the toolbar.
+                </li>
+                <li>
+                  <strong>Undo / Clear:</strong> use the buttons at the top left to undo or redo. Click the X to clear all drawings.
+                </li>
+                <li>
+                  To make <strong>straight lines</strong>, hold the <strong>Shift</strong> key while drawing with the pen.
+                </li>
+              </ul>
+            </div>
+
+            <h2 className="tutorial-section-label" style={{marginTop: '1.5rem'}}>Practice Canvas</h2>
             <div className="tutorial-comparison">
               <div className="tutorial-comparison-toolbar">
                 <div className="canvas-wrapper tutorial-practice-canvas-wrap">
@@ -133,14 +146,13 @@ export default function TutorialPage() {
                 </p>
               </div>
               <div className="tutorial-comparison-sample">
-                <img src="/suneung_images/suneung1_annotation.png" alt="Chart with example visual highlights" />
+                <img src="/suneung_images/tutorial_example.png" alt="Chart with example visual highlights" />
                 <p className="tutorial-image-label">
                   <strong>Right: example highlights based on the caption.</strong>
                 </p>
               </div>
             </div>
           </div>
-
           <div className="tutorial-caption-panel">
             <h2 className="tutorial-section-label">Caption</h2>
             <p className="caption-paragraph">
@@ -150,8 +162,14 @@ export default function TutorialPage() {
         </div>
 
         <p className="tutorial-desc">
+          In this task, you will be given <strong>three pairs of a chart image and a caption sentence</strong>.
+          <br />
+          Your goal is to draw <strong>visual highlights</strong> on the original <strong>chart image</strong> to help others understand the caption in a clear, friendly way.
+        </p>
+
+        <p className="tutorial-desc">
           The <strong>original chart image</strong> is shown on the left. You can use the <strong>Pen</strong> and{' '}
-          <strong>Eraser</strong> tools to draw <strong>visual highlights</strong> that help others follow the caption.
+          <strong>Eraser</strong> tools to draw <strong>visual highlights</strong>.
           <br />
           To show that you have understood this tutorial, please draw visual highlights on the{' '}
           <strong>left</strong> in a similar way to the example on the <strong>right</strong>.
