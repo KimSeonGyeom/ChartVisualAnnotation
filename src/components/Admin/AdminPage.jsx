@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../services/firebase';
+import questionsConfig from '../../config/questions.json';
 import './AdminPage.css';
 
 /** Shown as synthetic "Tutorial" row; hide duplicate trial rows from Firestore. */
@@ -43,6 +44,118 @@ function cohortForTrial(trial) {
 
 function isHttpUrl(s) {
   return typeof s === 'string' && /^https?:\/\//i.test(s.trim());
+}
+
+function generationVersionShortLabel(chartIndex) {
+  if (chartIndex === 1) return 'Version 1 (chart only)';
+  if (chartIndex === 2) return 'Version 2 (chart + drawing)';
+  return `Version ${chartIndex}`;
+}
+
+function responseValuePresent(v) {
+  return v !== undefined && v !== null && v !== '';
+}
+
+function formatReviewAnswerCell(question, value) {
+  if (question.type === 'likert') {
+    const n = Number(value);
+    const label = question.labels?.[n - 1];
+    return label ? `${value} (${label})` : String(value);
+  }
+  if (question.type === 'text') {
+    return String(value);
+  }
+  return String(value);
+}
+
+/** Per-trial answers from session review doc — one matrix table (question × version). */
+function TrialGenerationReviewAnswers({ review, trialId }) {
+  const reviewQuestions = questionsConfig.review?.questions || [];
+  const responses = review?.responses || {};
+
+  if (!trialId) {
+    return <p className="admin-empty">Missing trial id.</p>;
+  }
+
+  if (!review) {
+    return <p className="admin-empty">No review submitted for this session.</p>;
+  }
+
+  const trialKeyPrefix = `${trialId}_`;
+  const hasTrialAnswers = Object.keys(responses).some(k => k.startsWith(trialKeyPrefix));
+
+  if (!hasTrialAnswers) {
+    return <p className="admin-empty">No review answers for this trial.</p>;
+  }
+
+  const comparisonQ = reviewQuestions.find(q => q.type === 'radio_comparison');
+  let comparison = null;
+  if (comparisonQ) {
+    const k = `${trialId}_${comparisonQ.id}`;
+    const v = responses[k];
+    if (responseValuePresent(v)) {
+      const chartIndex = Number(v);
+      comparison = {
+        question: comparisonQ.question,
+        chartIndex,
+        label: Number.isFinite(chartIndex)
+          ? generationVersionShortLabel(chartIndex)
+          : String(v),
+      };
+    }
+  }
+
+  const perVersionQuestions = reviewQuestions.filter(q => q.type !== 'radio_comparison');
+
+  const dash = <span className="admin-review-cell-empty">—</span>;
+
+  return (
+    <div className="admin-trial-review-answers">
+      <table className="admin-table admin-review-matrix-table">
+        <thead>
+          <tr>
+            <th scope="col" className="admin-review-matrix-th-question">Question</th>
+            <th scope="col">Version 1 (chart only)</th>
+            <th scope="col">Version 2 (chart + drawing)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {comparison && (
+            <tr key={`${trialId}_comparison`}>
+              <td className="admin-table-key">{comparison.question}</td>
+              <td className="admin-review-answer-text">
+                {comparison.chartIndex === 1 ? comparison.label : dash}
+              </td>
+              <td className="admin-review-answer-text">
+                {comparison.chartIndex === 2 ? comparison.label : dash}
+              </td>
+            </tr>
+          )}
+          {perVersionQuestions.map((q) => {
+            const v1 = responses[`${trialId}_1_${q.id}`];
+            const v2 = responses[`${trialId}_2_${q.id}`];
+            return (
+              <tr key={q.id}>
+                <td className="admin-table-key">{q.question}</td>
+                <td className="admin-review-answer-text">
+                  {responseValuePresent(v1) ? formatReviewAnswerCell(q, v1) : dash}
+                </td>
+                <td className="admin-review-answer-text">
+                  {responseValuePresent(v2) ? formatReviewAnswerCell(q, v2) : dash}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {review.submittedAt?.toDate && (
+        <p className="admin-review-meta">
+          Review submitted: {review.submittedAt.toDate().toLocaleString()}
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** Firestore `annotation.imageUrl` from save (token URL); optional legacy `imageData`. */
@@ -603,6 +716,17 @@ export default function AdminPage() {
                     </>
                   )}
                 </div>
+              </section>
+
+              <section className="admin-section">
+                <h3>Participant review (this trial)</h3>
+                <p className="admin-section-hint">
+                  Answers from the session review task, mapped to each generated version (same labels as above).
+                </p>
+                <TrialGenerationReviewAnswers
+                  review={reviews[selected.sessionId]}
+                  trialId={selected.trialId}
+                />
               </section>
 
               {/* Stats */}

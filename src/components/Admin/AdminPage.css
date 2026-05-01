@@ -460,3 +460,50 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
+
+/* Per-trial review answers (generation v1 / v2) */
+.admin-section-hint {
+  margin: -0.35rem 0 0.85rem;
+  font-size: 0.8rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+.admin-trial-review-answers {
+  margin-top: 0.25rem;
+}
+
+.admin-review-matrix-table .admin-table-key {
+  white-space: normal;
+  min-width: 11rem;
+  max-width: 36%;
+}
+
+.admin-review-matrix-table th {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.78rem;
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid #e5e5e5;
+  vertical-align: bottom;
+}
+
+.admin-review-matrix-th-question {
+  width: 36%;
+}
+
+.admin-review-cell-empty {
+  color: #c5c5c5;
+}
+
+.admin-review-meta {
+  margin: 1rem 0 0;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.admin-review-answer-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
