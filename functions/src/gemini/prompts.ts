@@ -18,11 +18,15 @@ Caption: ${input.caption}
 Intent: ${input.userIntent}
 
 **Task:** 
-Please annotate this figure based on the provided caption and the user's strategic intent to make it more understandable.
-While annotating, please make sure to follow the instructions below.
+Annotate the given chart based on the caption and the user's strategic intent to improve clarity and understanding.
+Please follow the guidelines below when performing the annotation task.
 
-**Instructions:**
-- Strict Data Fidelity: Only use figures explicitly mentioned in the text or visible in the chart. Do not "hallucinate" or invent any additional statistics.
-- Eliminate Redundancy: Each annotation must be distinct. Avoid placing multiple labels that convey the same data point or insight to keep the visual clean.
+**Guidelines:**
+1. Data Fidelity
+- Use only numerical values that are explicitly present in the chart or caption.
+- If a value is unclear or not directly visible, avoid adding specific numbers.
+
+2. Avoid Redundancy
+- Try to make each annotation convey a unique insight.
 `;
 }
