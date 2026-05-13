@@ -16,37 +16,24 @@
     }
   ],
   "review": {
-    "id": "review_v1",
+    "id": "review_v2",
     "label": "Review Questions",
     "questions": [
       {
-        "id": "better_choice",
-        "type": "radio_comparison",
-        "question": "Which is better?",
-        "required": true
-      },
-      {
-        "id": "intent_reflected",
+        "id": "understanding",
         "type": "likert",
-        "question": "This annotation accurately reflects my original intent.",
-        "scale": 5,
-        "labels": ["Strongly Disagree", "", "Neutral", "", "Strongly Agree"],
+        "question": "This annotation helps readers understand the caption.",
+        "scale": 7,
+        "labels": ["Strongly Disagree", "", "", "Neutral", "", "", "Strongly Agree"],
         "required": true
       },
       {
-        "id": "visual_quality",
-        "type": "likert",
-        "question": "The visual quality of this annotation is satisfactory.",
-        "scale": 5,
-        "labels": ["Strongly Disagree", "", "Neutral", "", "Strongly Agree"],
-        "required": true
-      },
-      {
-        "id": "feedback_comments",
+        "id": "reason",
         "type": "text",
-        "question": "Additional feedback or comments",
-        "placeholder": "Describe what could be improved or what works well...",
-        "required": true
+        "question": "Please provide brief reasons for your score.",
+        "placeholder": "Briefly explain your rating...",
+        "required": true,
+        "maxLength": 500
       }
     ]
   }
