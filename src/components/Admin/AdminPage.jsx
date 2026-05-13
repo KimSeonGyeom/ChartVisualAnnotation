@@ -56,61 +56,116 @@ function responseValuePresent(v) {
   return v !== undefined && v !== null && v !== '';
 }
 
-function formatReviewAnswerCell(question, value) {
-  if (question.type === 'likert') {
-    const n = Number(value);
-    const label = question.labels?.[n - 1];
-    return label ? `${value} (${label})` : String(value);
-  }
-  if (question.type === 'text') {
-    return String(value);
-  }
-  return String(value);
-}
+const ORDINALS = { 1: '1st', 2: '2nd', 3: '3rd' };
+const VERSION_COL_LABELS = {
+  v1: 'v1 · chart only',
+  v2: 'v2 · chart + drawing',
+  v3: 'v3 · base image',
+};
 
-/** Per-trial answers from session review doc — one matrix table (question × version). */
+/** Per-trial answers from session review doc — new 3-version format. */
 function TrialGenerationReviewAnswers({ review, trialId }) {
-  const reviewQuestions = questionsConfig.review?.questions || [];
   const responses = review?.responses || {};
 
-  if (!trialId) {
-    return <p className="admin-empty">Missing trial id.</p>;
+  if (!trialId) return <p className="admin-empty">Missing trial id.</p>;
+  if (!review)  return <p className="admin-empty">No review submitted for this session.</p>;
+
+  const hasTrialAnswers = Object.keys(responses).some(k => k.startsWith(`${trialId}_`));
+  if (!hasTrialAnswers) return <p className="admin-empty">No review answers for this trial.</p>;
+
+  const isNewFormat = [1, 2, 3].some(pos => responses[`${trialId}_rank_${pos}`]);
+
+  const dash = <span className="admin-review-cell-empty">—</span>;
+
+  // ── New format (v3+) ──────────────────────────────────
+  if (isNewFormat) {
+    const versionRank = {};
+    [1, 2, 3].forEach(pos => {
+      const v = responses[`${trialId}_rank_${pos}`];
+      if (v) versionRank[v] = pos;
+    });
+
+    // Decode display labels from imageOrder
+    const trialOrder = review.imageOrder?.[trialId] || [];
+    const displayLabel = {};
+    trialOrder.forEach((v, i) => { displayLabel[v] = ['A', 'B', 'C'][i]; });
+
+    return (
+      <div className="admin-trial-review-answers">
+        <table className="admin-table admin-review-matrix-table">
+          <thead>
+            <tr>
+              <th scope="col" className="admin-review-matrix-th-question">Question</th>
+              {['v1', 'v2', 'v3'].map(v => (
+                <th key={v} scope="col">
+                  {VERSION_COL_LABELS[v]}
+                  {displayLabel[v] && <span className="admin-display-label"> (shown as Image {displayLabel[v]})</span>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="admin-table-key">Rank</td>
+              {['v1', 'v2', 'v3'].map(v => (
+                <td key={v} className="admin-review-answer-text">
+                  {versionRank[v] ? ORDINALS[versionRank[v]] : dash}
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <td className="admin-table-key">Understanding (1–7)</td>
+              {['v1', 'v2', 'v3'].map(v => {
+                const val = responses[`${trialId}_${v}_understanding`];
+                return (
+                  <td key={v} className="admin-review-answer-text">
+                    {responseValuePresent(val) ? String(val) : dash}
+                  </td>
+                );
+              })}
+            </tr>
+            <tr>
+              <td className="admin-table-key">Reason</td>
+              {['v1', 'v2', 'v3'].map(v => {
+                const val = responses[`${trialId}_${v}_reason`];
+                return (
+                  <td key={v} className="admin-review-answer-text admin-review-reason-cell">
+                    {responseValuePresent(val) ? String(val) : dash}
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+        {review.submittedAt?.toDate && (
+          <p className="admin-review-meta">
+            Review submitted: {review.submittedAt.toDate().toLocaleString()}
+          </p>
+        )}
+      </div>
+    );
   }
 
-  if (!review) {
-    return <p className="admin-empty">No review submitted for this session.</p>;
-  }
-
-  const trialKeyPrefix = `${trialId}_`;
-  const hasTrialAnswers = Object.keys(responses).some(k => k.startsWith(trialKeyPrefix));
-
-  if (!hasTrialAnswers) {
-    return <p className="admin-empty">No review answers for this trial.</p>;
-  }
-
+  // ── Legacy format (v1/v2 cohorts) ────────────────────
+  const reviewQuestions = questionsConfig.review?.questions || [];
   const comparisonQ = reviewQuestions.find(q => q.type === 'radio_comparison');
   let comparison = null;
   if (comparisonQ) {
-    const k = `${trialId}_${comparisonQ.id}`;
-    const v = responses[k];
+    const v = responses[`${trialId}_${comparisonQ.id}`];
     if (responseValuePresent(v)) {
       const chartIndex = Number(v);
       comparison = {
         question: comparisonQ.question,
         chartIndex,
-        label: Number.isFinite(chartIndex)
-          ? generationVersionShortLabel(chartIndex)
-          : String(v),
+        label: Number.isFinite(chartIndex) ? generationVersionShortLabel(chartIndex) : String(v),
       };
     }
   }
-
   const perVersionQuestions = reviewQuestions.filter(q => q.type !== 'radio_comparison');
-
-  const dash = <span className="admin-review-cell-empty">—</span>;
 
   return (
     <div className="admin-trial-review-answers">
+      <p className="admin-section-hint">(Legacy format)</p>
       <table className="admin-table admin-review-matrix-table">
         <thead>
           <tr>
@@ -121,38 +176,27 @@ function TrialGenerationReviewAnswers({ review, trialId }) {
         </thead>
         <tbody>
           {comparison && (
-            <tr key={`${trialId}_comparison`}>
+            <tr>
               <td className="admin-table-key">{comparison.question}</td>
-              <td className="admin-review-answer-text">
-                {comparison.chartIndex === 1 ? comparison.label : dash}
-              </td>
-              <td className="admin-review-answer-text">
-                {comparison.chartIndex === 2 ? comparison.label : dash}
-              </td>
+              <td className="admin-review-answer-text">{comparison.chartIndex === 1 ? comparison.label : dash}</td>
+              <td className="admin-review-answer-text">{comparison.chartIndex === 2 ? comparison.label : dash}</td>
             </tr>
           )}
-          {perVersionQuestions.map((q) => {
+          {perVersionQuestions.map(q => {
             const v1 = responses[`${trialId}_1_${q.id}`];
             const v2 = responses[`${trialId}_2_${q.id}`];
             return (
               <tr key={q.id}>
                 <td className="admin-table-key">{q.question}</td>
-                <td className="admin-review-answer-text">
-                  {responseValuePresent(v1) ? formatReviewAnswerCell(q, v1) : dash}
-                </td>
-                <td className="admin-review-answer-text">
-                  {responseValuePresent(v2) ? formatReviewAnswerCell(q, v2) : dash}
-                </td>
+                <td className="admin-review-answer-text">{responseValuePresent(v1) ? String(v1) : dash}</td>
+                <td className="admin-review-answer-text">{responseValuePresent(v2) ? String(v2) : dash}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
-
       {review.submittedAt?.toDate && (
-        <p className="admin-review-meta">
-          Review submitted: {review.submittedAt.toDate().toLocaleString()}
-        </p>
+        <p className="admin-review-meta">Review submitted: {review.submittedAt.toDate().toLocaleString()}</p>
       )}
     </div>
   );
@@ -690,29 +734,32 @@ export default function AdminPage() {
                   {selected.generation?.status === 'completed' && (
                     <>
                       <div className="admin-gen-image-container">
-                        <h4>Version 1: Chart only</h4>
+                        <h4>v1 · Chart only</h4>
                         {selected.generation.reviewImageUrl1 ? (
-                          <img
-                            src={selected.generation.reviewImageUrl1}
-                            alt="Generated annotation v1"
-                            className="admin-annotation-img"
-                          />
+                          <img src={selected.generation.reviewImageUrl1} alt="Generated v1" className="admin-annotation-img" />
                         ) : (
                           <p className="admin-empty">No image URL</p>
                         )}
                       </div>
                       <div className="admin-gen-image-container">
-                        <h4>Version 2: Chart + Drawing</h4>
+                        <h4>v2 · Chart + Drawing</h4>
                         {selected.generation.reviewImageUrl2 ? (
-                          <img
-                            src={selected.generation.reviewImageUrl2}
-                            alt="Generated annotation v2"
-                            className="admin-annotation-img"
-                          />
+                          <img src={selected.generation.reviewImageUrl2} alt="Generated v2" className="admin-annotation-img" />
                         ) : (
                           <p className="admin-empty">No image URL</p>
                         )}
                       </div>
+                      {(() => {
+                        const setId = selected.session?.assignedSetId;
+                        const captionIdx = sets[setId]?.captionIndex ?? 0;
+                        const baseUrl = `/base_images/suneung${selected.imageIndex}_${captionIdx}.png`;
+                        return (
+                          <div className="admin-gen-image-container">
+                            <h4>v3 · Base image</h4>
+                            <img src={baseUrl} alt="Base annotation v3" className="admin-annotation-img" />
+                          </div>
+                        );
+                      })()}
                     </>
                   )}
                 </div>

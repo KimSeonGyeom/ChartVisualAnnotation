@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onRequest } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { defineSecret } from 'firebase-functions/params';
 import { generateAnnotatedCharts } from './gemini/client';
 import { uploadImageToStorage } from './utils/storage';
@@ -9,19 +10,90 @@ admin.initializeApp();
 const db = admin.firestore();
 const storage = admin.storage();
 
-// Define secret for Gemini API key
 const geminiApiKey = defineSecret('GEMINI_API_KEY');
+const MAX_AUTO_RETRIES = 3;
 
 /**
- * Firestore trigger: When a new trial is created, generate 2 annotated charts
- * 
+ * Shared generation logic used by both the Firestore trigger and the retry scheduler.
+ */
+async function runGeneration(
+  trialDocId: string,
+  trialRef: admin.firestore.DocumentReference,
+  trialData: admin.firestore.DocumentData,
+  apiKey: string
+): Promise<void> {
+  const prolificId = trialData.sessionId?.split('_')[0] || 'unknown';
+
+  const sessionDoc = await db.collection('sessions').doc(trialData.sessionId).get();
+  if (!sessionDoc.exists) throw new Error(`Session ${trialData.sessionId} not found`);
+  const sessionData = sessionDoc.data()!;
+
+  const setDoc = await db.collection('sets').doc(sessionData.assignedSetId).get();
+  if (!setDoc.exists) throw new Error(`Set ${sessionData.assignedSetId} not found`);
+  const setData = setDoc.data()!;
+
+  const stimulusIndex = parseInt(trialData.trialId.replace('trial_', '')) - 1;
+  const chartIndex = setData.indices[stimulusIndex];
+  if (chartIndex === undefined) throw new Error(`Stimulus index ${stimulusIndex} not found in set`);
+
+  const userDrawingImageUrl = trialData.annotation?.imageUrl;
+  if (!userDrawingImageUrl) {
+    throw new Error(
+      `Missing required human drawing image URL for trial ${trialDocId}. ` +
+      `Expected trials/{id}.annotation.imageUrl to be present.`
+    );
+  }
+
+  const inputData = {
+    chartIndex,
+    imageUrl: `/suneung_images/suneung${chartIndex}.png`,
+    caption: trialData.caption || '',
+    userDrawingBase64: userDrawingImageUrl,
+    userIntent: trialData.responses?.drawing_help_intent || '',
+    prolificId,
+    apiKey,
+  };
+
+  console.log(`📊 Processing chart ${chartIndex} for worker ${prolificId}`);
+
+  const { image1Base64, image2Base64 } = await generateAnnotatedCharts(inputData);
+
+  const bucket = storage.bucket();
+  const timestamp = Date.now();
+  const [url1, url2] = await Promise.all([
+    uploadImageToStorage(
+      bucket,
+      `reviews/${prolificId}/${trialDocId}_no_drawing_${timestamp}.png`,
+      image1Base64
+    ),
+    uploadImageToStorage(
+      bucket,
+      `reviews/${prolificId}/${trialDocId}_with_drawing_${timestamp}.png`,
+      image2Base64
+    ),
+  ]);
+
+  await trialRef.update({
+    'generation.status': 'completed',
+    'generation.completedAt': admin.firestore.FieldValue.serverTimestamp(),
+    'generation.reviewImageUrl1': url1,
+    'generation.reviewImageUrl2': url2,
+    'generation.prolificId': prolificId,
+  });
+
+  console.log(`✅ Generated annotations for trial ${trialDocId} (worker: ${prolificId})`);
+}
+
+/**
+ * Firestore trigger: When a new trial is created, generate 2 annotated charts.
  * Trial document ID format: {prolificId}_{timestamp}_{trialId}
- * This ensures each worker's trials are uniquely identified
  */
 export const processTrialAnnotation = onDocumentCreated(
   {
     document: 'trials/{trialDocId}',
     secrets: [geminiApiKey],
+    timeoutSeconds: 540,
+    memory: '1GiB',
   },
   async (event) => {
     const snapshot = event.data;
@@ -29,103 +101,24 @@ export const processTrialAnnotation = onDocumentCreated(
       console.log('No data associated with the event');
       return;
     }
-    
+
     const trialDocId = event.params.trialDocId as string;
     const trialData = snapshot.data();
-    
-    // Extract prolificId from the trial data (stored in session)
     const prolificId = trialData.sessionId?.split('_')[0] || 'unknown';
-    
+
     console.log(`🔄 Starting generation for trial ${trialDocId} (worker: ${prolificId})`);
-    
+
     try {
-      // Update status to processing
       await snapshot.ref.update({
         'generation.status': 'processing',
         'generation.startedAt': admin.firestore.FieldValue.serverTimestamp(),
-        'generation.prolificId': prolificId, // Track which worker this belongs to
-      });
-
-      // Fetch the session to get set assignment
-      const sessionDoc = await db.collection('sessions').doc(trialData.sessionId).get();
-      if (!sessionDoc.exists) {
-        throw new Error(`Session ${trialData.sessionId} not found`);
-      }
-      const sessionData = sessionDoc.data()!;
-
-      // Fetch the assigned set to get stimulus data
-      const setDoc = await db.collection('sets').doc(sessionData.assignedSetId).get();
-      if (!setDoc.exists) {
-        throw new Error(`Set ${sessionData.assignedSetId} not found`);
-      }
-
-      // Find the specific stimulus for this trial
-      const setData = setDoc.data()!;
-      const stimulusIndex = parseInt(trialData.trialId.replace('trial_', '')) - 1;
-      const chartIndex = setData.indices[stimulusIndex];
-      
-      if (chartIndex === undefined) {
-        throw new Error(`Stimulus index ${stimulusIndex} not found in set`);
-      }
-
-      // Prepare input for Gemini
-      const userDrawingImageUrl = trialData.annotation?.imageUrl;
-      if (!userDrawingImageUrl) {
-        throw new Error(
-          `Missing required human drawing image URL for trial ${trialDocId}. ` +
-          `Expected trials/{id}.annotation.imageUrl to be present.`
-        );
-      }
-
-      const inputData = {
-        chartIndex: chartIndex,
-        imageUrl: `/suneung_images/suneung${chartIndex}.png`,
-        caption: trialData.caption || '',
-        // Human drawing is mandatory for the "with drawing" generation path.
-        userDrawingBase64: userDrawingImageUrl,
-        userIntent: trialData.responses?.drawing_help_intent || '',
-        prolificId: prolificId, // Include worker ID for logging
-        apiKey: geminiApiKey.value(), // Pass API key from secret
-      };
-
-      console.log(`📊 Processing chart ${chartIndex} for worker ${prolificId}`);
-
-      // Call Gemini to generate 2 versions:
-      // Version 1: Based on original chart only (no worker drawing)
-      // Version 2: Based on original chart + worker's pen drawing overlay
-      const { image1Base64, image2Base64 } = await generateAnnotatedCharts(inputData);
-
-      // Upload to Firebase Storage with prolificId in the path for organization
-      const bucket = storage.bucket();
-      const timestamp = Date.now();
-      const [url1, url2] = await Promise.all([
-        uploadImageToStorage(
-          bucket, 
-          `reviews/${prolificId}/${trialDocId}_no_drawing_${timestamp}.png`, 
-          image1Base64
-        ),
-        uploadImageToStorage(
-          bucket, 
-          `reviews/${prolificId}/${trialDocId}_with_drawing_${timestamp}.png`, 
-          image2Base64
-        ),
-      ]);
-
-      // Update Firestore with results
-      await snapshot.ref.update({
-        'generation.status': 'completed',
-        'generation.completedAt': admin.firestore.FieldValue.serverTimestamp(),
-        'generation.reviewImageUrl1': url1,  // Version without worker drawing
-        'generation.reviewImageUrl2': url2,  // Version with worker drawing
         'generation.prolificId': prolificId,
+        'generation.retryCount': 0,
       });
 
-      console.log(`✅ Generated annotations for trial ${trialDocId} (worker: ${prolificId})`);
-      
+      await runGeneration(trialDocId, snapshot.ref, trialData, geminiApiKey.value());
     } catch (error: any) {
-      // Log error once, not repeatedly
       console.error(`❌ Generation failed for trial ${trialDocId} (worker: ${prolificId}):`, error.message);
-      
       await snapshot.ref.update({
         'generation.status': 'failed',
         'generation.completedAt': admin.firestore.FieldValue.serverTimestamp(),
@@ -133,6 +126,67 @@ export const processTrialAnnotation = onDocumentCreated(
         'generation.prolificId': prolificId,
       });
     }
+  }
+);
+
+/**
+ * Scheduled retry: Every minute, pick up failed trials and re-run generation.
+ * Skips trials that have already been retried MAX_AUTO_RETRIES times.
+ * Sets status to 'processing' before retrying to prevent duplicate runs.
+ */
+export const retryFailedTrials = onSchedule(
+  {
+    schedule: 'every 1 minutes',
+    secrets: [geminiApiKey],
+    timeoutSeconds: 540,
+    memory: '1GiB',
+  },
+  async () => {
+    const failedSnapshot = await db.collection('trials')
+      .where('generation.status', '==', 'failed')
+      .get();
+
+    if (failedSnapshot.empty) {
+      console.log('✅ No failed trials to retry');
+      return;
+    }
+
+    const retryTasks: Promise<void>[] = [];
+
+    failedSnapshot.forEach((doc) => {
+      const trialData = doc.data();
+      const retryCount = trialData.generation?.retryCount ?? 0;
+
+      if (retryCount >= MAX_AUTO_RETRIES) {
+        console.log(`⏭️ Skipping trial ${doc.id} - max retries (${MAX_AUTO_RETRIES}) reached`);
+        return;
+      }
+
+      const prolificId = trialData.sessionId?.split('_')[0] || 'unknown';
+      console.log(`🔁 Retrying trial ${doc.id} (worker: ${prolificId}, attempt: ${retryCount + 1}/${MAX_AUTO_RETRIES})`);
+
+      retryTasks.push((async () => {
+        try {
+          await doc.ref.update({
+            'generation.status': 'processing',
+            'generation.startedAt': admin.firestore.FieldValue.serverTimestamp(),
+            'generation.retryCount': admin.firestore.FieldValue.increment(1),
+          });
+
+          await runGeneration(doc.id, doc.ref, trialData, geminiApiKey.value());
+        } catch (error: any) {
+          console.error(`❌ Retry failed for trial ${doc.id} (worker: ${prolificId}):`, error.message);
+          await doc.ref.update({
+            'generation.status': 'failed',
+            'generation.completedAt': admin.firestore.FieldValue.serverTimestamp(),
+            'generation.errorMessage': error.message,
+          });
+        }
+      })());
+    });
+
+    await Promise.all(retryTasks);
+    console.log(`🔁 Retry cycle complete. Processed ${retryTasks.length} failed trial(s).`);
   }
 );
 

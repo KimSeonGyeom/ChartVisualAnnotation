@@ -16,10 +16,10 @@ interface GenerationOutput {
   image2Base64: string;
 }
 
-// Real-time experiment: short bounded retries without long stalls.
-const IMAGE_FETCH_RETRY_DELAYS_MS = [0, 500, 1000];
-const IMAGE_FETCH_TIMEOUT_MS = 2000;
-const GEMINI_RETRY_DELAYS_MS = [0, 500, 1000];
+const IMAGE_FETCH_RETRY_DELAYS_MS = [0, 1000, 2000];
+const IMAGE_FETCH_TIMEOUT_MS = 5000;
+// NO_IMAGE is an intermittent model issue; longer backoff significantly improves success rate.
+const GEMINI_RETRY_DELAYS_MS = [0, 2000, 5000, 10000, 20000, 30000];
 const GEMINI_MAX_ATTEMPTS = GEMINI_RETRY_DELAYS_MS.length;
 
 function sleep(ms: number): Promise<void> {
