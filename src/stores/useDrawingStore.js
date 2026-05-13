@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export const useDrawingStore = create((set, get) => ({
   // ==================== TOOL STATE ====================
-  // 'pen' | 'eraser'
+  // 'pen' | 'rect' | 'eraser'
   activeTool: 'pen',
 
   // ==================== CONFIG ====================
@@ -10,6 +10,10 @@ export const useDrawingStore = create((set, get) => ({
     color: '#000000',
     width: 3,
   },
+  /** 'solid' | 'dashed' — freehand pen only */
+  penLineStyle: 'solid',
+  /** Dash gap pattern [dash, gap, ...] for fabric.Path.strokeDashArray */
+  penDashPattern: [8, 5],
   allowCustomization: true,
 
   // ==================== ACTIVITY LOG STATE ====================
@@ -27,13 +31,31 @@ export const useDrawingStore = create((set, get) => ({
 
   initializeFromConfig: (studyConfig) => {
     const { features } = studyConfig;
+    const dash = features?.penDashPattern;
+    const penDashPattern =
+      Array.isArray(dash) && dash.length >= 2 && dash.every((n) => typeof n === 'number' && n > 0)
+        ? dash
+        : [8, 5];
+    const lineStyle = features?.penDefaults?.lineStyle;
+    const penLineStyle = lineStyle === 'dashed' ? 'dashed' : 'solid';
+
     set({
       allowCustomization: features?.allowPenCustomization ?? true,
+      penDashPattern,
+      penLineStyle,
       config: {
         color: features?.penDefaults?.color || '#000000',
         width: features?.penDefaults?.width || 3,
       },
     });
+  },
+
+  setPenLineStyle: (style) => {
+    if (style !== 'solid' && style !== 'dashed') return;
+    const prev = get().penLineStyle;
+    if (prev === style) return;
+    get().logActivity('pen_line_style_change', { previous: prev, next: style });
+    set({ penLineStyle: style });
   },
 
   setColor: (color) => {
@@ -71,7 +93,7 @@ export const useDrawingStore = create((set, get) => ({
   // ==================== ACTIONS: ACTIVITY LOGGING ====================
 
   logActivity: (type, data = {}) => {
-    const { trialStartTime, config, activeTool } = get();
+    const { trialStartTime, config, activeTool, penLineStyle } = get();
     const now = Date.now();
 
     const activity = {
@@ -83,6 +105,7 @@ export const useDrawingStore = create((set, get) => ({
         color: config.color,
         width: config.width,
         activeTool,
+        penLineStyle,
       },
     };
 
@@ -160,6 +183,8 @@ export const useDrawingStore = create((set, get) => ({
   reset: () => {
     set({
       activeTool: 'pen',
+      penLineStyle: 'solid',
+      penDashPattern: [8, 5],
       config: { color: '#000000', width: 3 },
       allowCustomization: true,
       activities: [],

@@ -8,6 +8,8 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
     allowCustomization,
     activeTool,
     setActiveTool,
+    penLineStyle,
+    setPenLineStyle,
   } = useDrawingStore();
   
   const { penOptions } = studyConfig.features;
@@ -27,6 +29,70 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
             >
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
                 <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+              </svg>
+            </button>
+            <div
+              className={`pen-line-style-group${activeTool === 'pen' ? '' : ' pen-line-style-group--idle'}`}
+              role="group"
+              aria-label="Pen line style"
+            >
+              <button
+                type="button"
+                className={`tool-btn pen-line-style-btn ${penLineStyle === 'solid' ? 'active' : ''}`}
+                onClick={() => setPenLineStyle('solid')}
+                disabled={activeTool !== 'pen'}
+                title="Solid pen stroke"
+                aria-label="Solid line"
+                aria-pressed={penLineStyle === 'solid'}
+              >
+                <svg viewBox="0 0 24 8" width="22" height="10" fill="currentColor" aria-hidden>
+                  <rect x="1" y="3" width="22" height="2" rx="0.5" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className={`tool-btn pen-line-style-btn ${penLineStyle === 'dashed' ? 'active' : ''}`}
+                onClick={() => setPenLineStyle('dashed')}
+                disabled={activeTool !== 'pen'}
+                title="Dashed pen stroke"
+                aria-label="Dashed line"
+                aria-pressed={penLineStyle === 'dashed'}
+              >
+                <svg viewBox="0 0 24 8" width="22" height="10" fill="currentColor" aria-hidden>
+                  <rect x="1" y="3" width="4" height="2" rx="0.5" />
+                  <rect x="8" y="3" width="4" height="2" rx="0.5" />
+                  <rect x="15" y="3" width="4" height="2" rx="0.5" />
+                </svg>
+              </button>
+            </div>
+            <button
+              type="button"
+              className={`tool-btn ${activeTool === 'rect' ? 'active' : ''}`}
+              onClick={() => setActiveTool('rect')}
+              title="Rectangle highlight"
+              aria-label="Rectangle highlight"
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                {/* Outer frame + inner fill (like the filled body on the eraser icon, not the eraser shape). */}
+                <rect
+                  x="4"
+                  y="2"
+                  width="16"
+                  height="20"
+                  rx="1"
+                  fill="currentColor"
+                  opacity="0.38"
+                />
+                <rect
+                  x="4"
+                  y="2"
+                  width="16"
+                  height="20"
+                  rx="1"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
               </svg>
             </button>
             <button
@@ -61,8 +127,10 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
         {/* Color: always reserve width when customizable so pen ↔ eraser doesn’t reflow the row */}
         {allowCustomization && (
           <div
-            className={`toolbar-section toolbar-section-colors${activeTool === 'pen' ? '' : ' toolbar-section-colors--idle'}`}
-            aria-hidden={activeTool !== 'pen'}
+            className={`toolbar-section toolbar-section-colors${
+              activeTool === 'pen' || activeTool === 'rect' ? '' : ' toolbar-section-colors--idle'
+            }`}
+            aria-hidden={activeTool !== 'pen' && activeTool !== 'rect'}
           >
             <span className="toolbar-label">Color:</span>
             <div className="color-options">
@@ -74,8 +142,8 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
                   style={{ backgroundColor: color }}
                   onClick={() => setColor(color)}
                   title={color}
-                  disabled={activeTool !== 'pen'}
-                  tabIndex={activeTool === 'pen' ? undefined : -1}
+                  disabled={activeTool !== 'pen' && activeTool !== 'rect'}
+                  tabIndex={activeTool === 'pen' || activeTool === 'rect' ? undefined : -1}
                 />
               ))}
             </div>

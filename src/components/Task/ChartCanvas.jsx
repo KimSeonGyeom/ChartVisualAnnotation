@@ -6,11 +6,31 @@ const getActiveTool = () => useDrawingStore.getState().activeTool;
 
 /** Eraser stroke is thicker than the pen so it is usable; matches the hollow guide ring diameter. */
 function getEraserBrushWidth(penWidth) {
-  return Math.max(Math.round(Number(penWidth) * 2.5), 22);
+  const base = Math.max(Math.round(Number(penWidth) * 2.5), 22);
+  return Math.max(15, Math.round(base * (2 / 3)));
 }
 
 /** Semi-transparent preview on the upper canvas while dragging the eraser (stroke removal is applied on mouse up). */
 const ERASER_PREVIEW_COLOR = 'rgba(90, 90, 90, 0.4)';
+
+/** Include on `canvas.toJSON` so undo/redo and eraser keep user rectangles. */
+const CANVAS_JSON_PROPS = ['cvaRect'];
+
+function hexToRgba(hex, alpha) {
+  if (!hex || typeof hex !== 'string') return `rgba(0,0,0,${alpha})`;
+  let h = hex.replace('#', '');
+  if (h.length === 3) {
+    h = h.split('')
+      .map((c) => c + c)
+      .join('');
+  }
+  const n = parseInt(h, 16);
+  if (Number.isNaN(n)) return `rgba(0,0,0,${alpha})`;
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 function distancePointToSegment(px, py, x1, y1, x2, y2) {
   const dx = x2 - x1;
@@ -185,11 +205,32 @@ function pathHitByEraser(pathObj, eraserPts, eraserWidth) {
   return false;
 }
 
-/** Remove pen paths whose geometry overlaps the eraser stroke. */
+/** Remove pen paths whose geometry overlaps the eraser stroke; remove rects whose bounds overlap the eraser stroke bounds. */
 function removeStrokesOverlappingEraser(canvas, eraserPoints, eraserWidth) {
-  const roots = canvas.getObjects().filter(canObjectBeErased);
-  const toRemove = roots.filter((obj) => pathHitByEraser(obj, eraserPoints, eraserWidth));
-  toRemove.forEach((obj) => canvas.remove(obj));
+  const paths = canvas.getObjects().filter((obj) => canObjectBeErased(obj));
+  const rects = canvas.getObjects().filter((obj) => obj && obj.visible && obj.type === 'rect' && obj.cvaRect);
+  const toRemovePaths = paths.filter((obj) => pathHitByEraser(obj, eraserPoints, eraserWidth));
+  const pad = eraserWidth / 2 + 4;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of eraserPoints) {
+    minX = Math.min(minX, p.x);
+    maxX = Math.max(maxX, p.x);
+    minY = Math.min(minY, p.y);
+    maxY = Math.max(maxY, p.y);
+  }
+  const toRemoveRects = rects.filter((rect) => {
+    const br = rect.getBoundingRect(true);
+    const boxLeft = minX - pad;
+    const boxRight = maxX + pad;
+    const boxTop = minY - pad;
+    const boxBottom = maxY + pad;
+    return !(boxRight < br.left || boxLeft > br.left + br.width || boxBottom < br.top || boxTop > br.top + br.height);
+  });
+  toRemovePaths.forEach((obj) => canvas.remove(obj));
+  toRemoveRects.forEach((obj) => canvas.remove(obj));
 }
 
 function patchPencilBrushForStrokeEraser(pencilBrush, isEraserMode) {
@@ -404,7 +445,7 @@ export default function ChartCanvas({
 
       canvas.getObjects().forEach((obj) => canvas.remove(obj));
       canvas.renderAll();
-      historyRef.current = [cloneFabricJson(canvas.toJSON())];
+      historyRef.current = [cloneFabricJson(canvas.toJSON(CANVAS_JSON_PROPS))];
       historyIndexRef.current = 0;
     };
 
@@ -424,11 +465,111 @@ export default function ChartCanvas({
     const canvas = fabricRef.current;
     if (!canvas) return;
 
-    const json = cloneFabricJson(canvas.toJSON());
+    const json = cloneFabricJson(canvas.toJSON(CANVAS_JSON_PROPS));
     historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
     historyRef.current.push(json);
     historyIndexRef.current = historyRef.current.length - 1;
   }, []);
+
+  // Rectangle highlight: drag to create axis-aligned rect (30% fill)
+  useEffect(() => {
+    if (!fabricRef.current || activeTool !== 'rect') return undefined;
+
+    const canvas = fabricRef.current;
+    const state = { preview: null, origin: null };
+
+    const paintStyle = () => {
+      const color = useDrawingStore.getState().config.color;
+      return { fill: hexToRgba(color, 0.3) };
+    };
+
+    const removePreview = () => {
+      if (state.preview) {
+        canvas.remove(state.preview);
+        state.preview = null;
+      }
+      state.origin = null;
+    };
+
+    const onDown = (opt) => {
+      if (getActiveTool() !== 'rect') return;
+      removePreview();
+      const p = canvas.getPointer(opt.e);
+      state.origin = { x: p.x, y: p.y };
+      const { fill } = paintStyle();
+      state.preview = new fabric.Rect({
+        left: p.x,
+        top: p.y,
+        width: 0,
+        height: 0,
+        fill,
+        strokeWidth: 0,
+        stroke: null,
+        selectable: false,
+        evented: false,
+        objectCaching: false,
+        cvaRect: true,
+      });
+      canvas.add(state.preview);
+      canvas.requestRenderAll();
+    };
+
+    const onMove = (opt) => {
+      if (getActiveTool() !== 'rect' || !state.preview || !state.origin) return;
+      const p = canvas.getPointer(opt.e);
+      const ox = state.origin.x;
+      const oy = state.origin.y;
+      const x = Math.min(ox, p.x);
+      const y = Math.min(oy, p.y);
+      const w = Math.abs(p.x - ox);
+      const h = Math.abs(p.y - oy);
+      const { fill } = paintStyle();
+      state.preview.set({ left: x, top: y, width: w, height: h, fill, stroke: null, strokeWidth: 0 });
+      canvas.requestRenderAll();
+    };
+
+    const finalize = () => {
+      const rect = state.preview;
+      const origin = state.origin;
+      if (!rect || !origin) return;
+      state.preview = null;
+      state.origin = null;
+
+      const rw = Math.abs(rect.width * (rect.scaleX || 1));
+      const rh = Math.abs(rect.height * (rect.scaleY || 1));
+
+      if (rw < 3 || rh < 3) {
+        canvas.remove(rect);
+        canvas.requestRenderAll();
+        return;
+      }
+
+      onStrokeStart();
+      onStrokeEnd(Math.hypot(rw, rh), 4);
+      saveToHistory();
+      canvas.requestRenderAll();
+    };
+
+    const onUp = () => finalize();
+
+    canvas.on('mouse:down', onDown);
+    canvas.on('mouse:move', onMove);
+    canvas.on('mouse:up', onUp);
+    document.addEventListener('mouseup', onUp);
+
+    return () => {
+      document.removeEventListener('mouseup', onUp);
+      canvas.off('mouse:down', onDown);
+      canvas.off('mouse:move', onMove);
+      canvas.off('mouse:up', onUp);
+      if (state.preview) {
+        canvas.remove(state.preview);
+        state.preview = null;
+      }
+      state.origin = null;
+      canvas.requestRenderAll();
+    };
+  }, [activeTool, onStrokeStart, onStrokeEnd, saveToHistory]);
 
   // Track pen / eraser stroke events
   useEffect(() => {
@@ -448,6 +589,13 @@ export default function ChartCanvas({
       }
 
       const path = e.path;
+      const { penLineStyle, penDashPattern } = useDrawingStore.getState();
+      if (penLineStyle === 'dashed' && Array.isArray(penDashPattern) && penDashPattern.length >= 2) {
+        path.set({ strokeDashArray: [...penDashPattern] });
+        path.setCoords();
+        canvas.requestRenderAll();
+      }
+
       let pathLength = 0;
       if (path.path) {
         for (let i = 1; i < path.path.length; i++) {
@@ -581,7 +729,13 @@ export default function ChartCanvas({
   return (
     <div className="chart-canvas-container">
       <div
-        className={activeTool === 'eraser' ? 'chart-stack chart-stack--eraser' : 'chart-stack'}
+        className={
+          activeTool === 'eraser'
+            ? 'chart-stack chart-stack--eraser'
+            : activeTool === 'rect'
+              ? 'chart-stack chart-stack--rect'
+              : 'chart-stack'
+        }
         style={{ width: viewSize.w, height: viewSize.h }}
         onMouseLeave={() => activeTool === 'eraser' && setEraserGuide(null)}
       >

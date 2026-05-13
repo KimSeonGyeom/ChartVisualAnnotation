@@ -160,7 +160,7 @@ export default function TaskPage() {
       <main className="task-content">
         <div className="task-instruction-row">
           <p className="canvas-instruction-main">
-            Read the caption below and draw visual highlights on the chart to help others understand the caption in a clear, friendly way. Then, please answer the survey on the right.
+            Read the caption below and draw visual highlights on the chart to help others understand the caption in a clear, friendly way. Then answer the question below the caption.
           </p>
         </div>
 
@@ -169,19 +169,19 @@ export default function TaskPage() {
             <div className="canvas-instruction">
               <ul className="canvas-instruction-list">
                 <li>
-                  <strong>Pen:</strong> select Pen in the toolbar, then draw on the chart.
+                  <strong>Pen:</strong> Draw either <strong>Solid</strong> or <strong>Dashed</strong> lines. For straight lines, hold the <strong>Shift</strong> key while drawing.
                 </li>
                 <li>
-                  <strong>Eraser:</strong> select Eraser and drag over pen strokes you drew; overlapping strokes are removed.
+                  <strong>Rectangle:</strong> Draw a semi-transparent rectangle highlight.
                 </li>
                 <li>
-                  <strong>Color:</strong> change the pen color from the Color menu at the top right of the toolbar.
+                  <strong>Eraser:</strong> Remove pen strokes or rectangle highlights; overlapping drawings are removed.
                 </li>
                 <li>
-                  <strong>Undo / Clear:</strong> use the buttons at the top left to undo or redo. Click the X to clear all drawings.
+                  <strong>Undo / Clear:</strong> Undo, redo, or clear all drawings.
                 </li>
                 <li>
-                  To make <strong>straight lines</strong>, hold the <strong>Shift</strong> key while drawing with the pen.
+                  <strong>Color:</strong> Change the color of the pen or rectangle.
                 </li>
               </ul>
               <hr className="canvas-instruction-divider" />
@@ -198,39 +198,41 @@ export default function TaskPage() {
                 onCanvasReady={handleCanvasReady}
               />
             </div>
-            <div className="caption-display">
-              <h2>Caption</h2>
-              <p className="caption-paragraph">
-                <span className="caption-sentence caption-sentence--highlight">
-                  {currentStimulus.caption}
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <aside className="info-section">
-            <div className="questions-scroll">
-              <QuestionPanel 
-                key={`questions-${currentTrialIndex}`}
-                onResponsesChange={handleResponsesChange}
-                disabled={isSubmitting}
-              />
+            <div className="task-copy-stack">
+              <div className="caption-display">
+                <h2>Caption</h2>
+                <p className="caption-paragraph">
+                  <span className="caption-sentence caption-sentence--highlight">
+                    {currentStimulus.caption}
+                  </span>
+                </p>
+              </div>
+              <div className="caption-display caption-display--question">
+                <h2>Question</h2>
+                <QuestionPanel
+                  key={`questions-${currentTrialIndex}`}
+                  hideTitle
+                  onResponsesChange={handleResponsesChange}
+                  disabled={isSubmitting}
+                />
+              </div>
             </div>
 
             {error && (
-              <div className="error-banner">
+              <div className="error-banner task-error-banner">
                 {error}
               </div>
             )}
 
             <button
+              type="button"
               className="btn btn-primary btn-submit"
               onClick={handleSubmit}
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Saving...' : isLastTrial ? 'Finish Study' : 'Next Task'}
             </button>
-          </aside>
+          </div>
         </div>
       </main>
     </div>

@@ -23,25 +23,9 @@ export const useStudyStore = create((set, get) => ({
   
   // Set assignment
   assignedSet: null,  // { id: "suneung_set_0", type: "suneung", captionIndex: 0, indices: [...] }
-  chartData: [],      // Contents from chartcap_data.json
   suneungData: [],    // Contents from suneung_caption.json
 
   // ==================== ACTIONS: SET ASSIGNMENT ====================
-
-  /**
-   * Load chart data from public/chartcap_data.json
-   */
-  loadChartData: async () => {
-    try {
-      const response = await fetch('/chartcap_data.json');
-      const data = await response.json();
-      set({ chartData: data });
-      return data;
-    } catch (error) {
-      console.error('Failed to load chart data:', error);
-      throw error;
-    }
-  },
 
   /**
    * Load suneung caption data from public/suneung_caption.json
@@ -348,7 +332,6 @@ export const useStudyStore = create((set, get) => ({
       sessionDocId: null,
       consentGiven: false,
       assignedSet: null,
-      chartData: [],
       suneungData: [],
     });
   },

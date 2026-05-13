@@ -8,8 +8,8 @@
           "id": "drawing_help_intent",
           "chunk": 1,
           "type": "text",
-          "question": "What were you trying to help others understand through your drawing and visual highlights?",
-          "placeholder": "Describe your intent...",
+          "question": "How and why do you think your drawing helps others understand the caption?",
+          "placeholder": "Describe your intention...",
           "required": true
         }
       ]

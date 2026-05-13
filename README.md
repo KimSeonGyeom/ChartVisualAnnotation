@@ -33,8 +33,7 @@ src/
 │   └── Admin/          # Admin dashboard
 ├── config/
 │   ├── questions.json  # Survey questions (task + review)
-│   ├── study.json      # Study configuration
-│   └── stimuli.json    # Chart stimuli data
+│   └── study.json      # Study configuration
 ├── stores/
 │   ├── useStudyStore.js    # Study state & Firebase
 │   └── useDrawingStore.js  # Drawing activity tracking

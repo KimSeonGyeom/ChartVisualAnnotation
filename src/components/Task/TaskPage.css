@@ -59,13 +59,18 @@
 .task-main-row {
   flex: 1;
   display: flex;
+  flex-direction: column;
+  align-items: center;
   min-height: 0;
   width: 100%;
 }
 
-/* Left: Canvas Section */
+/* Single column: chart + caption + question + actions */
 .chart-section {
-  flex: 0 0 850px;
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -110,6 +115,7 @@
   flex-direction: column;
   min-width: 0;
   align-items: center;
+  margin-bottom: 14px;
 }
 
 .chart-canvas-container {
@@ -132,6 +138,10 @@
 
 .chart-stack--eraser {
   cursor: none;
+}
+
+.chart-stack--rect {
+  cursor: crosshair;
 }
 
 .chart-underlay {
@@ -202,6 +212,36 @@
 .tool-options {
   display: flex;
   gap: 0.25rem;
+}
+
+.pen-line-style-group {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.pen-line-style-group--idle {
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+.pen-line-style-btn.tool-btn {
+  width: 30px;
+  min-width: 30px;
+  border: none;
+  border-radius: 0;
+}
+
+.pen-line-style-btn.tool-btn + .pen-line-style-btn.tool-btn {
+  border-left: 1px solid #ddd;
+}
+
+.tool-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .tool-btn {
@@ -351,18 +391,41 @@
   border-radius: 50%;
 }
 
-/* Right: Info Section */
-.info-section {
-  flex: 1;
-  min-width: 280px;
-  display: flex;
-  flex-direction: column;
-  border-left: 1px solid #eee;
-  padding-left: 1rem;
+/* Caption + question: one visual block under the chart */
+.task-copy-stack {
+  flex-shrink: 0;
+  width: 100%;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #eee;
+  padding: 1.25rem 0 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.task-copy-stack > .caption-display {
+  border: none;
+  margin: 0;
+  padding: 0;
+  max-height: none;
   overflow: visible;
 }
 
-/* Caption - Fixed at top with max height */
+.task-copy-stack > .caption-display:not(.caption-display--question) {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.task-copy-stack > .caption-display--question {
+  margin-top: 1.25rem;
+}
+
+.caption-display--question .question-label {
+  font-size: 1.2rem;
+  line-height: 1.8;
+  font-weight: 600;
+  color: #111;
+}
+
+/* Caption - also used inside .task-copy-stack (overrides below from stack rules) */
 .caption-display {
   flex-shrink: 0;
   max-height: 350px;
@@ -398,14 +461,6 @@
   font-weight: 600;
   background: #e8e8e8;
   padding: 0.1rem 0.25rem;
-}
-
-/* Questions - Scrollable */
-.questions-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-  min-height: 0;
 }
 
 /* Version Tabs */
@@ -474,12 +529,19 @@
 }
 
 .question-panel-title {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #111;
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #111;
+  font-size: 0.875rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 400;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.question-panel--embedded {
+  margin: 0;
+  padding: 0;
 }
 
 /* Horizontal Likert Scale */
@@ -666,6 +728,10 @@
   flex-shrink: 0;
 }
 
+.task-error-banner {
+  width: 100%;
+}
+
 /* Submit Button */
 .btn-submit {
   width: 100%;
@@ -691,20 +757,6 @@
   }
 
   .task-main-row {
-    flex-direction: column;
     min-height: unset;
-  }
-
-  .info-section {
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid #eee;
-    padding-left: 0;
-    padding-top: 1.5rem;
-    overflow: visible;
-  }
-
-  .questions-scroll {
-    overflow: visible;
   }
 }

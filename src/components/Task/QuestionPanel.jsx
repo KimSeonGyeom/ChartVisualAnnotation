@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import questionsConfig from '../../config/questions.json';
 
-export default function QuestionPanel({ onResponsesChange, disabled = false }) {
+export default function QuestionPanel({ onResponsesChange, disabled = false, hideTitle = false }) {
   const [activeVersion, setActiveVersion] = useState(questionsConfig.versions[0].id);
   const [responses, setResponses] = useState({});
   const [errors, setErrors] = useState({});
@@ -138,8 +138,8 @@ export default function QuestionPanel({ onResponsesChange, disabled = false }) {
   };
 
   return (
-    <div className="question-panel">
-      <h2 className="question-panel-title">Survey</h2>
+    <div className={`question-panel${hideTitle ? ' question-panel--embedded' : ''}`}>
+      {!hideTitle && <h2 className="question-panel-title">Question</h2>}
       {chunkIds.map((chunkId) => (
         <div key={`chunk_${chunkId}`} className="question-chunk">
           {visibleQuestions
