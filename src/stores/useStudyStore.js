@@ -4,8 +4,21 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../services/firebase';
+import studyConfig from '../config/study.json';
 
 const NUM_SETS = 4; // suneung_set_0 ~ suneung_set_3
+
+/** Required; no fallback — avoids loading charts from the wrong folder. */
+export function getChartAssetFolder() {
+  const raw = studyConfig.chartAssetFolder;
+  const folder = typeof raw === 'string' ? raw.trim() : '';
+  if (!folder) {
+    throw new Error(
+      'study.json must set chartAssetFolder to a non-empty string (e.g. pilot_v3). There is no fallback folder.'
+    );
+  }
+  return folder;
+}
 
 /** Main task trials only (excludes tutorial practice), matches getSetStimuli ids: trial_1, trial_2, … */
 function isMainTaskTrialId(trialId) {
@@ -23,21 +36,21 @@ export const useStudyStore = create((set, get) => ({
   
   // Set assignment
   assignedSet: null,  // { id: "suneung_set_0", type: "suneung", captionIndex: 0, indices: [...] }
-  suneungData: [],    // Contents from suneung_caption.json
+  suneungData: [],    // Chart captions from public/{chartAssetFolder}/caption.json
 
   // ==================== ACTIONS: SET ASSIGNMENT ====================
 
   /**
-   * Load suneung caption data from public/suneung_caption.json
+   * Load caption data from public/{chartAssetFolder}/caption.json
    */
   loadSuneungData: async () => {
     try {
-      const response = await fetch('/suneung_caption.json');
+      const response = await fetch(`/${getChartAssetFolder()}/caption.json`);
       const data = await response.json();
       set({ suneungData: data });
       return data;
     } catch (error) {
-      console.error('Failed to load suneung data:', error);
+      console.error('Failed to load chart caption data:', error);
       throw error;
     }
   },
@@ -83,13 +96,15 @@ export const useStudyStore = create((set, get) => ({
     if (!assignedSet || !suneungData.length) return [];
 
     const captionIdx = assignedSet.captionIndex ?? 0;
+    const folder = getChartAssetFolder();
 
     return assignedSet.indices.map((index, order) => {
       const chart = suneungData.find(c => c.id === index);
+      const file = chart?.filename || `${index}.png`;
       return {
         id: `trial_${order + 1}`,
         imageIndex: index,
-        imageUrl: `/suneung_images/suneung${index}.png`,
+        imageUrl: `/${folder}/${file}`,
         caption: chart?.captions[captionIdx] || '',
         allCaptions: chart?.captions || [],
         captionIndex: captionIdx,
@@ -119,6 +134,7 @@ export const useStudyStore = create((set, get) => ({
         studyId,
         sessionId,
         chartExperience,
+        chartAssetFolder: getChartAssetFolder(),
         assignedSetId: assignedSet?.id || null,
         assignedIndices: assignedSet?.indices || [],
         startedAt: serverTimestamp(),

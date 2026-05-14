@@ -6,7 +6,7 @@ import TaskPage from './components/Task/TaskPage';
 import ReviewPage from './components/Review/ReviewPage';
 import FinishPage from './components/Finish/FinishPage';
 import AdminPage from './components/Admin/AdminPage';
-import { useStudyStore } from './stores/useStudyStore';
+import { useStudyStore, getChartAssetFolder } from './stores/useStudyStore';
 import './App.css';
 
 /**
@@ -24,7 +24,7 @@ function useDevPreviewBootstrap() {
 
     (async () => {
       try {
-        const res = await fetch('/suneung_caption.json');
+        const res = await fetch(`/${getChartAssetFolder()}/caption.json`);
         if (!res.ok) throw new Error(`Failed to load captions: ${res.status}`);
         const data = await res.json();
         if (cancelled) return;
@@ -40,7 +40,7 @@ function useDevPreviewBootstrap() {
             id: 'suneung_set_0',
             type: 'suneung',
             captionIndex: 0,
-            indices: [2, 3, 4, 5],
+            indices: [2, 3, 4],
           },
           sessionDocId: `preview_${Date.now()}`,
           suneungData: data,

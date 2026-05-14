@@ -9,7 +9,7 @@
           "chunk": 1,
           "type": "text",
           "question": "How and why do you think your drawing helps others understand the caption?",
-          "placeholder": "Describe your intention...",
+          "placeholder": "[Description of your drawing] deliberately visualizes [Target information] in a way that helps others [Impact of your drawing].",
           "required": true
         }
       ]

@@ -118,7 +118,7 @@ export default function ReviewPage() {
     const images = generatedImages[stimulus.id];
     if (versionKey === 'v1') return images?.url1 || null;
     if (versionKey === 'v2') return images?.url2 || null;
-    if (versionKey === 'v3') return `/base_images/suneung${stimulus.imageIndex}_${stimulus.captionIndex}.png`;
+    if (versionKey === 'v3') return `/base_images/${stimulus.imageIndex}_${stimulus.captionIndex}.png`;
     return null;
   };
 
@@ -208,11 +208,6 @@ export default function ReviewPage() {
                 <p className="review-caption-text">
                   <strong>Caption:</strong> {stimulus.caption}
                 </p>
-                {trialIntents[stimulus.id] && (
-                  <p className="review-intent-text">
-                    <strong>Your Intent:</strong> {trialIntents[stimulus.id]}
-                  </p>
-                )}
               </div>
 
               {/* ── Per-image questions ── */}

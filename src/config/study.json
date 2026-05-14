@@ -3,7 +3,8 @@
   "description": "In this study, you will view charts with captions and add visual highlights on the chart for helping other people understand the caption more clearly.",
   "prolificCompletionUrl": "https://app.prolific.com/submissions/complete?cc=C1119O75",
   "estimatedMinutes": 25,
-  
+
+  "chartAssetFolder": "pilot_v3",
   "consent": {
     "title": "Research Consent Form",
     "content": [

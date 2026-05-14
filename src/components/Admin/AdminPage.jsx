@@ -3,6 +3,7 @@ import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../services/firebase';
 import questionsConfig from '../../config/questions.json';
+import { getChartAssetFolder } from '../../stores/useStudyStore';
 import './AdminPage.css';
 
 /** Shown as synthetic "Tutorial" row; hide duplicate trial rows from Firestore. */
@@ -299,7 +300,8 @@ export default function AdminPage() {
           reviewsMap[d.data().sessionId] = d.data();
         });
 
-        const suneungResponse = await fetch('/suneung_caption.json');
+        const folder = getChartAssetFolder();
+        const suneungResponse = await fetch(`/${folder}/caption.json`);
         const suneungJson = await suneungResponse.json();
 
         if (!cancelled) {

@@ -6,18 +6,18 @@ import { useDrawingStore } from '../../stores/useDrawingStore';
 import { useStudyStore } from '../../stores/useStudyStore';
 import { ref, uploadString } from 'firebase/storage';
 import { storage } from '../../services/firebase';
-import studyConfig from '../../config/study.json';
+import { getChartAssetFolder } from '../../stores/useStudyStore';
 import '../Task/TaskPage.css';
 import './TutorialPage.css';
 
 const TUTORIAL_CAPTION =
   'The percentage of people in the 18-29 group who said they had read a print book was 74%, which was the highest among the four groups.';
 
-const PRACTICE_CHART_URL = '/suneung_images/suneung0.png';
+const chartFolder = getChartAssetFolder();
+/** Practice canvas uses the dedicated tutorial chart asset (not a numbered task chart). */
+const PRACTICE_CHART_URL = `/${chartFolder}/tutorial_example.png`;
 
-/** Tutorial uses a dedicated image that won't appear in actual tasks */
 const TUTORIAL_TRIAL_ID = 'tutorial_practice';
-const TUTORIAL_IMAGE_INDEX = 0; // Index 0 reserved for tutorial, not used in task sets
 
 /** Match right-column example image max width so both columns align; height follows chart aspect ratio (no letterboxing). */
 const PRACTICE_DISPLAY_MAX_W = 520;
@@ -146,7 +146,7 @@ export default function TutorialPage() {
                 </p>
               </div>
               <div className="tutorial-comparison-sample">
-                <img src="/suneung_images/tutorial_example.png" alt="Chart with example visual highlights" />
+                <img src={`/${chartFolder}/tutorial_example.png`} alt="Chart with example visual highlights" />
                 <p className="tutorial-image-label">
                   <strong>Right: example highlights based on the caption.</strong>
                 </p>
@@ -162,25 +162,17 @@ export default function TutorialPage() {
         </div>
 
         <p className="tutorial-desc">
-          In this task, you will be given <strong>three pairs of a chart image and a caption sentence</strong>.
+          Your goal is to draw <strong>visual highlights</strong> on the <strong>chart</strong> to help others understand the caption in a clear way.
           <br />
-          Your goal is to draw <strong>visual highlights</strong> on the original <strong>chart image</strong> to help others understand the caption in a clear, friendly way.
+          The goal should follow the format: "[Description of your drawing] deliberately visualizes [Target information] in a way that helps others [Impact of your drawing]."
+          <br />
+          For example, "A combination of a horizontal line, number, and downward arrows highlight how much the other groups are lower than the 18-29 group, so the readers can give attention to the differences first while reading the chart."
         </p>
 
         <p className="tutorial-desc">
-          The <strong>original chart image</strong> is shown on the left. You can use the <strong>Pen</strong>,{' '}
-          <strong>Rectangle</strong>, and <strong>Eraser</strong> tools to draw <strong>visual highlights</strong>.
+          You can use the <strong>Pen</strong>, <strong>Rectangle</strong>, and <strong>Eraser</strong> tools to draw visual highlights.
           <br />
-          To show that you have understood this tutorial, please draw visual highlights on the{' '}
-          <strong>left</strong> in a similar way to the example on the <strong>right</strong>.
-        </p>
-
-        <p className="tutorial-desc">
-          For the tasks in following stages, you will be given a new chart image and a new caption sentence.
-          <br />
-          There are no right or wrong answers.
-          <br />
-          <strong>Feel free to draw any visual highlights on any parts of the chart if you think it helps others understand the caption!</strong>
+          <strong>TODO:</strong> To show that you have understood how to use the tools to draw visual highlights, draw the visual highlights on the left chart in the same way as the example on the right.
         </p>
 
         {saveError && <p className="error-message tutorial-save-error">{saveError}</p>}

@@ -77,9 +77,20 @@ export const processTrialAnnotation = onDocumentCreated(
         );
       }
 
+      // Fetch chart image for Gemini (same path rule as client: folder from session)
+      const chartFolderRaw = sessionData.chartAssetFolder;
+      const chartAssetFolder =
+        typeof chartFolderRaw === 'string' ? chartFolderRaw.trim() : '';
+      if (!chartAssetFolder) {
+        throw new Error(
+          `Session ${trialData.sessionId} has no chartAssetFolder; refusing to guess chart path for Gemini.`
+        );
+      }
+      const imageUrl = `/${chartAssetFolder}/${chartIndex}.png`;
+
       const inputData = {
         chartIndex: chartIndex,
-        imageUrl: `/suneung_images/suneung${chartIndex}.png`,
+        imageUrl,
         caption: trialData.caption || '',
         // Human drawing is mandatory for the "with drawing" generation path.
         userDrawingBase64: userDrawingImageUrl,
