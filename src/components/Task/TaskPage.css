@@ -65,11 +65,11 @@
   width: 100%;
 }
 
-/* Single column: chart + caption + question + actions */
+/* Single column: chart + caption + question + actions (use width near 1200px content area) */
 .chart-section {
   flex: 1 1 auto;
   width: 100%;
-  max-width: 760px;
+  max-width: 1080px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;

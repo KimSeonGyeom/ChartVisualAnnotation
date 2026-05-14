@@ -8,8 +8,8 @@
           "id": "drawing_help_intent",
           "chunk": 1,
           "type": "text",
-          "question": "How and why do you think your drawing helps others understand the caption?",
-          "placeholder": "[Description of your drawing] deliberately visualizes [Target information] in a way that helps others [Impact of your drawing].",
+          "question": "How does your drawing help people understand the caption?",
+          "placeholder": "Describe your intent...",
           "required": true
         }
       ]
@@ -31,7 +31,7 @@
         "id": "reason",
         "type": "text",
         "question": "Please provide brief reasons for your score.",
-        "placeholder": "Briefly explain your rating...",
+        "placeholder": "Explain your rating...",
         "required": true,
         "maxLength": 500
       }

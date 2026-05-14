@@ -40,12 +40,19 @@ function buildPrompt(caption) {
 Caption: ${caption}
 
 **Task:** 
-Please annotate this given chart based on the provided caption to make it more understandable.
-When performing the annotation task, you must strictly adhere to all the instructions provided below.
+Annotate the given chart based on the caption and the user's intent.
+When annotating the chart, please strictly follow all the guidelines below.
 
-**Instructions:**
-1. No Invented Statistics: Use only the numerical values provided in the caption or chart. Do not calculate, estimate, or "hallucinate" new numbers that are not directly stated.
-2. Eliminate Redundancy: Each annotation must be distinct. Avoid placing multiple labels that convey the same data point or insight to keep the visual clean.
+**Guidelines:**
+1. **No Invented Statistics:** Use only the numerical values explicitly provided in the caption or visible in the chart. Do not calculate, derive, estimate, round, convert units, compare ratios, infer rankings, or create any new numbers that are not directly stated.
+
+2. **Avoid Clutter and Redundancy:** Each annotation must be distinct. Avoid placing multiple labels that convey the same data point or insight to keep the visual clean. Make the chart easier to read, not busier. Use visual emphasis selectively and ensure annotations do not obscure important data.
+
+3. **Improve the Visual Appearance:** Do not preserve the input drawing exactly as-is. Refine the appearance by improving styling, alignment, spacing, hierarchy, and visual polish while keeping the original chart content and meaning.
+
+4. **No Text-Only Annotations:** Do not add annotations that consist only of plain text. Every text-based annotation must include a graphical cue that clearly connects the texts to the relevant part of the chart.
+
+5. **Explore Creative Styles:** Visual annotations should explore creative visual styles while preserving the intended meaning. Prioritize expressive communication, and novel visual perspective even though the original chart follows a simple, basic and plain design.
 `;
 }
 // ──────────────────────────────────────────────────────────────────────────────

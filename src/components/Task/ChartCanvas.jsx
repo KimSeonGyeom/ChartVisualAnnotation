@@ -304,7 +304,7 @@ export default function ChartCanvas({
   const canvasRef = useRef(null);
   const fabricRef = useRef(null);
   const underlayImgRef = useRef(null);
-  const underlayLayoutRef = useRef({ left: 0, top: 0, dw: 0, dh: 0, nw: 0, nh: 0 });
+  const underlayLayoutRef = useRef({ dw: 0, nw: 0, nh: 0 });
   const historyRef = useRef([]);
   const historyIndexRef = useRef(-1);
   /** Tool at start of current free-draw stroke (fixes any store/event ordering issues). */
@@ -430,7 +430,6 @@ export default function ChartCanvas({
 
       const scale = Math.min(width / nw, height / nh);
       const dw = nw * scale;
-      const dh = nh * scale;
       const cw = Math.max(1, Math.round(dw));
       const ch = Math.max(1, Math.round((nh / nw) * cw));
 
@@ -438,7 +437,7 @@ export default function ChartCanvas({
       imgEl.style.top = '0';
       imgEl.style.width = `${cw}px`;
       imgEl.style.height = `${ch}px`;
-      underlayLayoutRef.current = { left: 0, top: 0, dw: cw, dh: ch, nw, nh };
+      underlayLayoutRef.current = { dw: cw, nw, nh };
 
       canvas.setDimensions({ width: cw, height: ch });
       setViewSize({ w: cw, h: ch });
@@ -569,7 +568,7 @@ export default function ChartCanvas({
       state.origin = null;
       canvas.requestRenderAll();
     };
-  }, [activeTool, onStrokeStart, onStrokeEnd, saveToHistory]);
+  }, [activeTool, onStrokeStart, onStrokeEnd, saveToHistory, width, height]);
 
   // Track pen / eraser stroke events
   useEffect(() => {
@@ -633,8 +632,7 @@ export default function ChartCanvas({
       canvas.off('path:created', handlePathCreated);
       canvas.off('eraser:stroke:end', handleEraserStrokeEnd);
     };
-  }, [activeTool, onStrokeStart, onStrokeEnd, saveToHistory]);
-
+  }, [activeTool, onStrokeStart, onStrokeEnd, saveToHistory, width, height]);
 
   const undoAction = useCallback(() => {
     const canvas = fabricRef.current;
@@ -682,13 +680,9 @@ export default function ChartCanvas({
 
     canvas.renderAll();
 
-    /** Current display size */
-    const lw = canvas.getWidth();
-    const lh = canvas.getHeight();
-
     /** Use natural (original) size for export */
-    const nw = layout.nw || lw;
-    const nh = layout.nh || lh;
+    const nw = layout.nw || canvas.getWidth();
+    const nh = layout.nh || canvas.getHeight();
     
     const out = document.createElement('canvas');
     out.width = nw;  // Export at original size
@@ -703,10 +697,6 @@ export default function ChartCanvas({
       ctx.fillRect(0, 0, out.width, out.height);
     }
 
-    // Scale drawings to match original size
-    const scaleX = nw / lw;
-    const scaleY = nh / lh;
-    
     const lower = canvas.lowerCanvasEl;
     const upper = canvas.upperCanvasEl;
     if (lower) {

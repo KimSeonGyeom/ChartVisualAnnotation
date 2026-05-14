@@ -3,10 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useStudyStore } from '../../stores/useStudyStore';
 import { useDrawingStore } from '../../stores/useDrawingStore';
 import ChartCanvas from './ChartCanvas';
-import PenToolbar from './PenToolbar';
+import PenToolbar, { DrawingToolInstructions } from './PenToolbar';
 import QuestionPanel from './QuestionPanel';
 import studyConfig from '../../config/study.json';
 import './TaskPage.css';
+
+/** Max box for chart fit (ChartCanvas scales image inside; ~same aspect as previous 700×500). */
+const TASK_CHART_DISPLAY_WIDTH = 960;
+const TASK_CHART_DISPLAY_HEIGHT = Math.round((500 / 700) * TASK_CHART_DISPLAY_WIDTH);
 
 export default function TaskPage() {
   const navigate = useNavigate();
@@ -166,26 +170,7 @@ export default function TaskPage() {
 
         <div className="task-main-row">
           <div className="chart-section">
-            <div className="canvas-instruction">
-              <ul className="canvas-instruction-list">
-                <li>
-                  <strong>Pen:</strong> Draw either <strong>Solid</strong> or <strong>Dashed</strong> lines. For straight lines, hold the <strong>Shift</strong> key while drawing.
-                </li>
-                <li>
-                  <strong>Rectangle:</strong> Draw a semi-transparent rectangle highlight.
-                </li>
-                <li>
-                  <strong>Eraser:</strong> Remove pen strokes or rectangle highlights; overlapping drawings are removed.
-                </li>
-                <li>
-                  <strong>Undo / Clear:</strong> Undo, redo, or clear all drawings.
-                </li>
-                <li>
-                  <strong>Color:</strong> Change the color of the pen or rectangle.
-                </li>
-              </ul>
-              <hr className="canvas-instruction-divider" />
-            </div>
+            <DrawingToolInstructions showDivider />
             <div className="canvas-wrapper">
               <PenToolbar
                 onUndo={() => canvasActionsRef.current?.undo()}
@@ -195,6 +180,8 @@ export default function TaskPage() {
               <ChartCanvas
                 key={`canvas-${currentTrialIndex}`}
                 imageUrl={currentStimulus.imageUrl}
+                width={TASK_CHART_DISPLAY_WIDTH}
+                height={TASK_CHART_DISPLAY_HEIGHT}
                 onCanvasReady={handleCanvasReady}
               />
             </div>

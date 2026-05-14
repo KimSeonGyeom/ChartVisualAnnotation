@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ChartCanvas from '../Task/ChartCanvas';
-import PenToolbar from '../Task/PenToolbar';
+import PenToolbar, { DrawingToolInstructions } from '../Task/PenToolbar';
+import studyConfig from '../../config/study.json';
 import { useDrawingStore } from '../../stores/useDrawingStore';
-import { useStudyStore } from '../../stores/useStudyStore';
-import { ref, uploadString } from 'firebase/storage';
-import { storage } from '../../services/firebase';
-import { getChartAssetFolder } from '../../stores/useStudyStore';
+import { useStudyStore, getChartAssetFolder } from '../../stores/useStudyStore';
 import '../Task/TaskPage.css';
 import './TutorialPage.css';
 
@@ -98,28 +96,7 @@ export default function TutorialPage() {
         <div className="tutorial-visual-emphasis">
           <div className="tutorial-images-section">
             <h2 className="tutorial-section-label">Drawing Tool Instructions</h2>
-            <div className="canvas-instruction">
-              <ul className="canvas-instruction-list">
-                <li>
-                  <strong>Pen:</strong> select Pen in the toolbar, then draw on the chart. Use <strong>Solid</strong> or <strong>Dashed</strong> next to the pen icon for a solid or dashed stroke.
-                </li>
-                <li>
-                  <strong>Eraser:</strong> select Eraser and drag over pen strokes or rectangle highlights; overlapping marks are removed.
-                </li>
-                <li>
-                  <strong>Color:</strong> change the highlight color from the Color menu (used by Pen and Rectangle).
-                </li>
-                <li>
-                  <strong>Undo / Clear:</strong> use the buttons at the top left to undo or redo. Click the X to clear all drawings.
-                </li>
-                <li>
-                  To make <strong>straight lines</strong>, hold the <strong>Shift</strong> key while drawing with the pen.
-                </li>
-                <li>
-                  <strong>Rectangle:</strong> select the rectangle tool, then drag on the chart to add a semi-transparent highlight over an area.
-                </li>
-              </ul>
-            </div>
+            <DrawingToolInstructions />
 
             <h2 className="tutorial-section-label" style={{marginTop: '1.5rem'}}>Practice Canvas</h2>
             <div className="tutorial-comparison">
@@ -164,14 +141,13 @@ export default function TutorialPage() {
         <p className="tutorial-desc">
           Your goal is to draw <strong>visual highlights</strong> on the <strong>chart</strong> to help others understand the caption in a clear way.
           <br />
-          The goal should follow the format: "[Description of your drawing] deliberately visualizes [Target information] in a way that helps others [Impact of your drawing]."
+          The goal can usually be described as: "[Description of your drawing] helps others to [Impact of your drawing]."
           <br />
-          For example, "A combination of a horizontal line, number, and downward arrows highlight how much the other groups are lower than the 18-29 group, so the readers can give attention to the differences first while reading the chart."
+          For example, "A combination of a horizontal line, number, and downward arrows makes it noticeable and easier to understand how much the other groups are lower than the 18-29 group."
         </p>
 
         <p className="tutorial-desc">
-          You can use the <strong>Pen</strong>, <strong>Rectangle</strong>, and <strong>Eraser</strong> tools to draw visual highlights.
-          <br />
+          Please refer to the <strong>Drawing Tool Instructions</strong> above to understand how to use the tools to draw visual highlights.
           <strong>TODO:</strong> To show that you have understood how to use the tools to draw visual highlights, draw the visual highlights on the left chart in the same way as the example on the right.
         </p>
 
