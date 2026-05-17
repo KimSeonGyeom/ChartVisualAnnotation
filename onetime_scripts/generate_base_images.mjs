@@ -1,13 +1,18 @@
 /**
  * generate_base_images.mjs
  *
- * Generates annotated base images using Gemini for all chart × caption combinations.
- * Output: base_images/{chartIndex}_{captionIndex}.png (e.g. charts 2–4 × 4 captions)
+ * Reads public/{CHART_ASSET_FOLDER}/caption.json and generates baseline annotated PNGs
+ * Writes to public/{CHART_ASSET_FOLDER}/baseImages/{chartId}_{captionIndex}.png (served as /{folder}/baseImages/...)
+ *
+ * Caption shapes:
+ * - pilot_v3 style: one string per chart → single output per chart (_0).
+ * - suneung style: captions[] → one output per array slot (_0 … _{n-1}).
  *
  * Usage:
- *   CHART_ASSET_FOLDER=pilot_v3 GEMINI_API_KEY=your_key node onetime_scripts/generate_base_images.mjs
+ *   CHART_ASSET_FOLDER=pilot_v3 node onetime_scripts/generate_base_images.mjs
+ *   CHART_IDS=2,4 node onetime_scripts/generate_base_images.mjs   # optional subset by chart id
  *
- * Or add GEMINI_API_KEY to .env at the project root.
+ * GEMINI_API_KEY: .env at project root or env var.
  */
 
 import fs from 'fs';
@@ -39,7 +44,7 @@ function buildPrompt(caption) {
   return `
 Caption: ${caption}
 
-**Task:** 
+**Task:**
 Annotate the given chart based on the caption and the user's intent.
 When annotating the chart, please strictly follow all the guidelines below.
 
@@ -52,17 +57,36 @@ When annotating the chart, please strictly follow all the guidelines below.
 
 4. **No Text-Only Annotations:** Do not add annotations that consist only of plain text. Every text-based annotation must include a graphical cue that clearly connects the texts to the relevant part of the chart.
 
-5. **Explore Creative Styles:** Visual annotations should explore creative visual styles while preserving the intended meaning. Prioritize expressive communication, and novel visual perspective even though the original chart follows a simple, basic and plain design.
+5. **Explore Creative Styles:** Visual annotations should explore creative visual styles while preserving the key insight. Prioritize expressive communication, and novel visual perspective even though the original chart follows a simple, basic and plain design.
 `;
 }
-// ──────────────────────────────────────────────────────────────────────────────
 
-const CHART_INDICES = [2, 3, 4];
-const CAPTION_COUNT = 4;
 const CHART_ASSET_FOLDER = process.env.CHART_ASSET_FOLDER || 'pilot_v3';
 const IMAGE_DIR = path.join(ROOT, 'public', CHART_ASSET_FOLDER);
 const CAPTION_FILE = path.join(ROOT, 'public', CHART_ASSET_FOLDER, 'caption.json');
-const OUTPUT_DIR = path.join(ROOT, 'base_images');
+const OUTPUT_DIR = path.join(ROOT, 'public', CHART_ASSET_FOLDER, 'baseImages');
+
+/** pilot_v3: string; suneung: string[] → list of captions for this chart */
+function captionsForEntry(entry) {
+  const raw = entry?.captions;
+  if (Array.isArray(raw)) return raw.filter((c) => typeof c === 'string' && c.trim());
+  if (typeof raw === 'string' && raw.trim()) return [raw.trim()];
+  return [];
+}
+
+/** Optional filter: CHART_IDS=2,4,6 */
+function parseChartIdFilter() {
+  const raw = process.env.CHART_IDS;
+  if (!raw?.trim()) return null;
+  return new Set(
+    raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map(Number)
+      .filter((n) => Number.isFinite(n))
+  );
+}
 
 const RETRY_DELAYS_MS = [0, 2000, 5000, 10000, 20000, 30000];
 
@@ -105,10 +129,21 @@ async function generateWithRetry(ai, prompt, imageBase64) {
 }
 
 async function main() {
-  // Load captions
   const captionData = JSON.parse(fs.readFileSync(CAPTION_FILE, 'utf-8'));
+  if (!Array.isArray(captionData)) {
+    console.error('❌ caption.json must be a JSON array.');
+    process.exit(1);
+  }
 
-  // Prepare output directory
+  const idFilter = parseChartIdFilter();
+
+  /** @type {typeof captionData} */
+  const entries = idFilter
+    ? captionData.filter((e) => idFilter.has(e.id))
+    : captionData.slice();
+
+  const totalJobs = entries.reduce((sum, e) => sum + captionsForEntry(e).length, 0);
+
   if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
   const ai = new GoogleGenAI({ apiKey: API_KEY });
@@ -116,9 +151,11 @@ async function main() {
   let successCount = 0;
   let failCount = 0;
 
-  for (const chartIndex of CHART_INDICES) {
-    const chartEntry = captionData.find((c) => c.id === chartIndex);
-    const imageFile = chartEntry?.filename || `${chartIndex}.png`;
+  console.log(`Folder: ${CHART_ASSET_FOLDER}  |  Charts to process: ${entries.length}  |  Total images: ${totalJobs}`);
+
+  for (const chartEntry of entries) {
+    const chartId = chartEntry.id;
+    const imageFile = chartEntry.filename || `${chartId}.png`;
     const imagePath = path.join(IMAGE_DIR, imageFile);
     if (!fs.existsSync(imagePath)) {
       console.error(`❌ Image not found: ${imagePath}`);
@@ -126,16 +163,16 @@ async function main() {
     }
 
     const imageBase64 = fs.readFileSync(imagePath).toString('base64');
-    const chartCaptions = chartEntry?.captions;
+    const captionList = captionsForEntry(chartEntry);
 
-    if (!chartCaptions) {
-      console.error(`❌ Captions not found for chart index ${chartIndex}`);
+    if (captionList.length === 0) {
+      console.error(`❌ No usable captions for chart id ${chartId}`);
       continue;
     }
 
-    for (let captionIndex = 0; captionIndex < CAPTION_COUNT; captionIndex++) {
-      const caption = chartCaptions[captionIndex];
-      const outputFilename = `${chartIndex}_${captionIndex}.png`;
+    for (let captionIndex = 0; captionIndex < captionList.length; captionIndex++) {
+      const caption = captionList[captionIndex];
+      const outputFilename = `${chartId}_${captionIndex}.png`;
       const outputPath = path.join(OUTPUT_DIR, outputFilename);
 
       console.log(`\n🖼️  Generating ${outputFilename}`);
@@ -146,7 +183,9 @@ async function main() {
         const resultBase64 = await generateWithRetry(ai, prompt, imageBase64);
 
         fs.writeFileSync(outputPath, Buffer.from(resultBase64, 'base64'));
-        console.log(`   ✅ Saved → base_images/${outputFilename}`);
+        console.log(
+          `   ✅ Saved → public/${CHART_ASSET_FOLDER}/baseImages/${outputFilename}`
+        );
         successCount++;
       } catch (err) {
         console.error(`   ❌ Failed: ${err.message}`);
@@ -156,7 +195,7 @@ async function main() {
   }
 
   console.log(`\n${'─'.repeat(50)}`);
-  console.log(`✅ Success: ${successCount} / ${CHART_INDICES.length * CAPTION_COUNT}`);
+  console.log(`✅ Success: ${successCount} / ${totalJobs}`);
   if (failCount > 0) console.log(`❌ Failed:  ${failCount}`);
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStudyStore } from '../../stores/useStudyStore';
+import { useStudyStore, getChartAssetFolder } from '../../stores/useStudyStore';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import './ReviewPage.css';
@@ -8,7 +8,9 @@ import './ReviewPage.css';
 const LIKERT_QUESTION = 'This annotation helps readers understand the caption more easily.';
 const REASON_QUESTION = 'Please provide brief reasons for your score.';
 const LIKERT_SCALE = 7;
-const DISPLAY_LABELS = ['A', 'B', 'C'];
+const DISPLAY_LABELS = ['A', 'B'];
+/** Review columns: Gemini experimental vs static baseline PNG; order is randomized per stimulus. */
+const REVIEW_VARIANTS = ['v_exp', 'v_base'];
 
 function shuffleArray(arr) {
   const a = [...arr];
@@ -26,20 +28,18 @@ export default function ReviewPage() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [trialIntents, setTrialIntents] = useState({});
   const [generationStatus, setGenerationStatus] = useState({});
-  const [generatedImages, setGeneratedImages] = useState({});
-  const [imageOrder, setImageOrder] = useState({}); // per-stimulus shuffled column order v1|v2|v3 → Image A/B/C
+  const [imgExpUrls, setImageExpUrls] = useState({});
+  const [imageOrder, setImageOrder] = useState({});
 
   const { participant, assignedSet, getSetStimuli, saveReviewData, sessionDocId } = useStudyStore();
   const stimuli = getSetStimuli();
 
-  // Assign random display order for each stimulus (once on mount)
   useEffect(() => {
     if (stimuli.length === 0) return;
     const orders = {};
-    stimuli.forEach(stimulus => {
-      orders[stimulus.id] = shuffleArray(['v1', 'v2', 'v3']);
+    stimuli.forEach((stimulus) => {
+      orders[stimulus.id] = shuffleArray([...REVIEW_VARIANTS]);
     });
     setImageOrder(orders);
   }, [stimuli.length]);
@@ -49,27 +49,8 @@ export default function ReviewPage() {
       navigate('/');
       return;
     }
+  }, [participant, assignedSet, stimuli, navigate]);
 
-    const loadTrialIntents = async () => {
-      const intents = {};
-      for (const stimulus of stimuli) {
-        const trialDocId = `${sessionDocId}_${stimulus.id}`;
-        try {
-          const trialDoc = await getDoc(doc(db, 'trials', trialDocId));
-          if (trialDoc.exists()) {
-            intents[stimulus.id] = trialDoc.data().responses?.drawing_help_intent || '';
-          }
-        } catch (err) {
-          console.error(`Failed to load intent for ${stimulus.id}:`, err);
-        }
-      }
-      setTrialIntents(intents);
-    };
-
-    if (sessionDocId) loadTrialIntents();
-  }, [participant, assignedSet, stimuli, sessionDocId, navigate]);
-
-  // Poll Firestore for generation status every 5 seconds
   useEffect(() => {
     if (!sessionDocId || stimuli.length === 0) return;
     let intervalId = null;
@@ -85,12 +66,9 @@ export default function ReviewPage() {
             const generation = docSnap.data().generation || {};
             setGenerationStatus(prev => ({ ...prev, [stimulus.id]: generation.status || 'pending' }));
             if (generation.status === 'completed') {
-              setGeneratedImages(prev => ({
+              setImageExpUrls((prev) => ({
                 ...prev,
-                [stimulus.id]: {
-                  url1: generation.reviewImageUrl1,
-                  url2: generation.reviewImageUrl2,
-                },
+                [stimulus.id]: generation.imgExp,
               }));
             } else if (generation.status !== 'failed') {
               allCompleted = false;
@@ -115,11 +93,12 @@ export default function ReviewPage() {
   }, [sessionDocId, stimuli]);
 
   const getImageUrl = (stimulus, versionKey) => {
-    const images = generatedImages[stimulus.id];
-    if (versionKey === 'v1') return images?.url1 || null;
-    if (versionKey === 'v2') return images?.url2 || null;
-    if (versionKey === 'v3') return `/base_images/${stimulus.imageIndex}_${stimulus.captionIndex}.png`;
-    return null;
+    if (versionKey === 'v_exp') return imgExpUrls[stimulus.id];
+    if (versionKey === 'v_base') {
+      const folder = getChartAssetFolder();
+      return `/${folder}/baseImages/${stimulus.imageIndex}_${stimulus.captionIndex}.png`;
+    }
+    return '';
   };
 
   const setResponse = (stimulusId, versionKey, field, value) => {
@@ -140,11 +119,9 @@ export default function ReviewPage() {
     }
 
     const newErrors = {};
-    const versions = ['v1', 'v2', 'v3'];
 
-    stimuli.forEach(stimulus => {
-      // Check Likert and reason per version
-      versions.forEach(v => {
+    stimuli.forEach((stimulus) => {
+      REVIEW_VARIANTS.forEach((v) => {
         const likertKey = `${stimulus.id}_${v}_understanding`;
         const reasonKey = `${stimulus.id}_${v}_reason`;
         if (!responses[likertKey]) newErrors[likertKey] = 'Required';
@@ -200,7 +177,7 @@ export default function ReviewPage() {
         {stimuli.map((stimulus) => {
           const status = generationStatus[stimulus.id];
           const isGenerating = status === 'processing' || status === 'pending' || !status;
-          const order = imageOrder[stimulus.id] || ['v1', 'v2', 'v3'];
+          const order = imageOrder[stimulus.id] || [...REVIEW_VARIANTS];
 
           return (
             <div key={stimulus.id} className="review-trial-section">
@@ -214,8 +191,8 @@ export default function ReviewPage() {
               <div className="review-cards-container">
                 {order.map((versionKey, idx) => {
                   const label = DISPLAY_LABELS[idx];
-                  const isV3 = versionKey === 'v3';
-                  const cardGenerating = !isV3 && isGenerating;
+                  const isExp = versionKey === 'v_exp';
+                  const cardGenerating = isExp && isGenerating;
                   const imageUrl = getImageUrl(stimulus, versionKey);
                   const likertKey = `${stimulus.id}_${versionKey}_understanding`;
                   const reasonKey = `${stimulus.id}_${versionKey}_reason`;
@@ -229,7 +206,7 @@ export default function ReviewPage() {
                             <div className="spinner"></div>
                             <p>Generating annotation...</p>
                           </div>
-                        ) : status === 'failed' && !isV3 ? (
+                        ) : status === 'failed' && isExp ? (
                           <div className="generation-error">
                             <p>⚠️ Generation failed. Please wait for 1 minute. Image will be generated again.</p>
                           </div>

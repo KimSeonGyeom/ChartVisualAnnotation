@@ -48,8 +48,8 @@ function isHttpUrl(s) {
 }
 
 function generationVersionShortLabel(chartIndex) {
-  if (chartIndex === 1) return 'Version 1 (chart only)';
-  if (chartIndex === 2) return 'Version 2 (chart + drawing)';
+  if (chartIndex === 1) return 'Baseline (baseImages)';
+  if (chartIndex === 2) return 'Experimental (Gemini)';
   return `Version ${chartIndex}`;
 }
 
@@ -116,8 +116,8 @@ function TrialGenerationReviewAnswers({ review, trialId }) {
         <thead>
           <tr>
             <th scope="col" className="admin-review-matrix-th-question">Question</th>
-            <th scope="col">Version 1 (chart only)</th>
-            <th scope="col">Version 2 (chart + drawing)</th>
+            <th scope="col">Experimental (<code>v_exp</code>)</th>
+            <th scope="col">Baseline (<code>v_base</code>)</th>
           </tr>
         </thead>
         <tbody>
@@ -133,16 +133,16 @@ function TrialGenerationReviewAnswers({ review, trialId }) {
             </tr>
           )}
           {perVersionQuestions.map((q) => {
-            const v1 = responses[`${trialId}_1_${q.id}`];
-            const v2 = responses[`${trialId}_2_${q.id}`];
+            const vExp = responses[`${trialId}_v_exp_${q.id}`];
+            const vBase = responses[`${trialId}_v_base_${q.id}`];
             return (
               <tr key={q.id}>
                 <td className="admin-table-key">{q.question}</td>
                 <td className="admin-review-answer-text">
-                  {responseValuePresent(v1) ? formatReviewAnswerCell(q, v1) : dash}
+                  {responseValuePresent(vExp) ? formatReviewAnswerCell(q, vExp) : dash}
                 </td>
                 <td className="admin-review-answer-text">
-                  {responseValuePresent(v2) ? formatReviewAnswerCell(q, v2) : dash}
+                  {responseValuePresent(vBase) ? formatReviewAnswerCell(q, vBase) : dash}
                 </td>
               </tr>
             );
@@ -691,30 +691,14 @@ export default function AdminPage() {
                   </div>
                   {selected.generation?.status === 'completed' && (
                     <>
-                      <div className="admin-gen-image-container">
-                        <h4>Version 1: Chart only</h4>
-                        {selected.generation.reviewImageUrl1 ? (
-                          <img
-                            src={selected.generation.reviewImageUrl1}
-                            alt="Generated annotation v1"
-                            className="admin-annotation-img"
-                          />
-                        ) : (
-                          <p className="admin-empty">No image URL</p>
-                        )}
-                      </div>
-                      <div className="admin-gen-image-container">
-                        <h4>Version 2: Chart + Drawing</h4>
-                        {selected.generation.reviewImageUrl2 ? (
-                          <img
-                            src={selected.generation.reviewImageUrl2}
-                            alt="Generated annotation v2"
-                            className="admin-annotation-img"
-                          />
-                        ) : (
-                          <p className="admin-empty">No image URL</p>
-                        )}
-                      </div>
+                  <div className="admin-gen-image-container">
+                    <h4>Experimental (Gemini)</h4>
+                      <img
+                        src={selected.generation.imgExp}
+                        alt="Gemini experimental review image"
+                        className="admin-annotation-img"
+                      />
+                  </div>
                     </>
                   )}
                 </div>
@@ -723,7 +707,8 @@ export default function AdminPage() {
               <section className="admin-section">
                 <h3>Participant review (this trial)</h3>
                 <p className="admin-section-hint">
-                  Answers from the session review task, mapped to each generated version (same labels as above).
+                  Review task keys use <code>v_exp</code> (Gemini experimental) and <code>v_base</code>{' '}
+                  (static baseline).
                 </p>
                 <TrialGenerationReviewAnswers
                   review={reviews[selected.sessionId]}
