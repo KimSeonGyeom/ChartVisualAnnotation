@@ -112,7 +112,6 @@ export const processTrialAnnotation = onDocumentCreated(
       const inputData = {
         chartIndex,
         caption: trialData.caption || '',
-        userIntent: trialData.responses?.drawing_help_intent || '',
         prolificId,
         apiKey: geminiApiKey.value(),
         workerDrawingImageUrl,

@@ -4,7 +4,6 @@ import { GoogleGenAI } from '@google/genai';
 export interface GenerationInput {
   chartIndex: number;
   caption: string;
-  userIntent: string;
   prolificId: string;
   apiKey: string;
   workerDrawingImageUrl: string;
@@ -15,15 +14,14 @@ interface GenerationOutput {
 }
 
 function buildGeminiPrompt(
-  input: Pick<GenerationInput, 'caption' | 'userIntent' | 'chartIndex' | 'prolificId'>
+  input: Pick<GenerationInput, 'caption' | 'chartIndex' | 'prolificId'>
 ): string {
   return `
 **Information:**
 Caption: ${input.caption}
-Intent: ${input.userIntent}
 
 **Task:**
-Annotate the given chart based on the caption and the user's intent.
+Annotate the given chart based on the caption.
 When annotating the chart, please strictly follow all the guidelines below.
 
 **Guidelines:**
@@ -127,7 +125,7 @@ async function fetchHttpImageAsBase64(url: string): Promise<string> {
   );
 }
 
-// Experimental annotated chart via Gemini using the participant’s drawing image URL + caption/intent prompt.
+// Experimental annotated chart via Gemini using the participant’s drawing image URL + caption prompt.
  
 export async function generateImgExp(
   input: GenerationInput

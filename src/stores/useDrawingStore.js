@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export const useDrawingStore = create((set, get) => ({
   // ==================== TOOL STATE ====================
-  // 'pen' | 'rect' | 'eraser'
+  // 'pen' | 'rect' | 'text' | 'select'
   activeTool: 'pen',
 
   // ==================== CONFIG ====================
@@ -15,6 +15,14 @@ export const useDrawingStore = create((set, get) => ({
   /** Dash gap pattern [dash, gap, ...] for fabric.Path.strokeDashArray */
   penDashPattern: [8, 5],
   allowCustomization: true,
+
+  /** Select mode: chip highlight when all selected annotations share one palette color. */
+  selectionColorSummary: {
+    hasSelection: false,
+    uniformColor: null,
+  },
+  /** Set by ChartCanvas to recolor the current selection. */
+  _applySelectionColor: null,
 
   // ==================== ACTIVITY LOG STATE ====================
   activities: [],
@@ -58,9 +66,36 @@ export const useDrawingStore = create((set, get) => ({
     set({ penLineStyle: style });
   },
 
+  setSelectionColorSummary: (summary) => {
+    set({
+      selectionColorSummary: {
+        hasSelection: !!summary?.hasSelection,
+        uniformColor: summary?.uniformColor ?? null,
+      },
+    });
+  },
+
+  registerSelectionColorApplier: (fn) => {
+    set({ _applySelectionColor: typeof fn === 'function' ? fn : null });
+  },
+
   setColor: (color) => {
-    const { config, allowCustomization } = get();
+    const { config, allowCustomization, activeTool, selectionColorSummary, _applySelectionColor } =
+      get();
     if (!allowCustomization) return;
+
+    if (
+      activeTool === 'select' &&
+      selectionColorSummary.hasSelection &&
+      typeof _applySelectionColor === 'function'
+    ) {
+      _applySelectionColor(color);
+      get().logActivity('selection_color_change', {
+        newColor: color,
+        uniformBefore: selectionColorSummary.uniformColor,
+      });
+      return;
+    }
 
     get().logActivity('color_change', {
       previousColor: config.color,
@@ -128,6 +163,10 @@ export const useDrawingStore = create((set, get) => ({
 
   onClear: () => {
     get().logActivity('clear');
+  },
+
+  onDelete: () => {
+    get().logActivity('delete_selection');
   },
 
   // ==================== GETTERS ====================

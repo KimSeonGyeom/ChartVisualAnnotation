@@ -58,7 +58,9 @@ a {
 }
 
 /* Form Elements */
-input, select, textarea {
+input:not([type='checkbox']):not([type='radio']),
+select,
+textarea {
   font-family: inherit;
   font-size: 1.125rem;
   border: 1px solid #ddd;
@@ -68,7 +70,9 @@ input, select, textarea {
   color: #111;
 }
 
-input:focus, select:focus, textarea:focus {
+input:not([type='checkbox']):not([type='radio']):focus,
+select:focus,
+textarea:focus {
   outline: none;
   border-color: #111;
 }

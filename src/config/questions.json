@@ -3,16 +3,7 @@
     {
       "id": "v1",
       "label": "Questions",
-      "questions": [
-        {
-          "id": "drawing_help_intent",
-          "chunk": 1,
-          "type": "text",
-          "question": "How does your drawing help people understand the caption?",
-          "placeholder": "Describe your intent...",
-          "required": true
-        }
-      ]
+      "questions": []
     }
   ],
   "review": {

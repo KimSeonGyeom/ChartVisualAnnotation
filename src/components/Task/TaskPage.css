@@ -115,7 +115,6 @@
   flex-direction: column;
   min-width: 0;
   align-items: center;
-  margin-bottom: 14px;
 }
 
 .chart-canvas-container {
@@ -136,12 +135,16 @@
   flex-shrink: 0;
 }
 
-.chart-stack--eraser {
-  cursor: none;
-}
-
 .chart-stack--rect {
   cursor: crosshair;
+}
+
+.chart-stack--select {
+  cursor: default;
+}
+
+.chart-stack--text {
+  cursor: text;
 }
 
 .chart-underlay {
@@ -154,16 +157,6 @@
 .chart-fabric-layer {
   position: relative;
   z-index: 1;
-}
-
-.eraser-cursor-guide {
-  position: absolute;
-  z-index: 3;
-  pointer-events: none;
-  box-sizing: border-box;
-  border: 2px solid #111;
-  border-radius: 50%;
-  background: transparent;
 }
 
 .chart-fabric-layer canvas {
@@ -193,15 +186,11 @@
 .toolbar-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .toolbar-row-main {
   justify-content: space-between;
-}
-
-.toolbar-mode-select {
-  margin-right: 0.75rem;
 }
 
 .toolbar-row-options {
@@ -242,6 +231,25 @@
 .tool-btn:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+.tool-btn-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.tool-btn-letter {
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  font-family: serif, system-ui, -apple-system, 'Segoe UI';
+}
+
+.tool-btn > svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .tool-btn {
@@ -306,7 +314,7 @@
   gap: 0.5rem;
 }
 
-/* Keep toolbar-row width stable when switching pen / eraser (color strip stays in layout). */
+/* Keep toolbar-row width stable when switching pen / select (color strip stays in layout). */
 .toolbar-section-colors--idle {
   visibility: hidden;
   pointer-events: none;

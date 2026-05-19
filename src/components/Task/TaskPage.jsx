@@ -4,7 +4,6 @@ import { useStudyStore } from '../../stores/useStudyStore';
 import { useDrawingStore } from '../../stores/useDrawingStore';
 import ChartCanvas from './ChartCanvas';
 import PenToolbar, { DrawingToolInstructions } from './PenToolbar';
-import QuestionPanel from './QuestionPanel';
 import studyConfig from '../../config/study.json';
 import './TaskPage.css';
 
@@ -15,13 +14,11 @@ const TASK_CHART_DISPLAY_HEIGHT = Math.round((500 / 700) * TASK_CHART_DISPLAY_WI
 export default function TaskPage() {
   const navigate = useNavigate();
   const canvasActionsRef = useRef(null);
-  const questionValidateRef = useRef(null);
-  
-  const [responses, setResponses] = useState({});
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const { 
+  const {
     currentTrialIndex,
     startTrial,
     completeTrial,
@@ -39,25 +36,21 @@ export default function TaskPage() {
     initializeFromConfig,
   } = useDrawingStore();
 
-  // Get stimuli from assigned set
   const stimuli = getSetStimuli();
   const currentStimulus = stimuli[currentTrialIndex];
   const totalTrials = stimuli.length;
   const isLastTrial = currentTrialIndex >= totalTrials - 1;
 
-  // Check if participant and set are initialized
   useEffect(() => {
     if (!participant || !assignedSet) {
       navigate('/');
     }
   }, [participant, assignedSet, navigate]);
 
-  // Initialize drawing config from study config
   useEffect(() => {
     initializeFromConfig(studyConfig);
   }, [initializeFromConfig]);
 
-  // Start timing when trial begins
   useEffect(() => {
     if (currentStimulus) {
       startNewTrial();
@@ -69,13 +62,6 @@ export default function TaskPage() {
     canvasActionsRef.current = actions;
   };
 
-  const handleResponsesChange = (newResponses, validate) => {
-    setResponses(newResponses);
-    if (validate) {
-      questionValidateRef.current = validate;
-    }
-  };
-
   const validateSubmission = () => {
     const stats = getStats();
     const canvasObjects = canvasActionsRef.current?.getCanvas()?.getObjects()?.length ?? 0;
@@ -85,17 +71,12 @@ export default function TaskPage() {
       return false;
     }
 
-    if (questionValidateRef.current && !questionValidateRef.current()) {
-      setError('Please answer all required questions.');
-      return false;
-    }
-
     return true;
   };
 
   const handleSubmit = async () => {
     setError('');
-    
+
     if (!validateSubmission()) {
       return;
     }
@@ -114,7 +95,6 @@ export default function TaskPage() {
         imageIndex: currentStimulus.imageIndex,
         caption: currentStimulus.caption,
         annotation: canvasData,
-        responses,
         drawingActivities: activities,
         strokeCount: stats.strokeCount,
         totalPathLength: stats.totalPathLength,
@@ -127,9 +107,7 @@ export default function TaskPage() {
         navigate('/review');
       } else {
         nextTrial();
-        setResponses({});
       }
-
     } catch (err) {
       console.error('Failed to submit trial:', err);
       setError(`Failed to save your response: ${err.message || 'Unknown error'}. Please try again.`);
@@ -154,8 +132,8 @@ export default function TaskPage() {
             Task {currentTrialIndex + 1} of {totalTrials}
           </span>
           <div className="progress-bar">
-            <div 
-              className="progress-fill" 
+            <div
+              className="progress-fill"
               style={{ width: `${((currentTrialIndex + 1) / totalTrials) * 100}%` }}
             />
           </div>
@@ -194,15 +172,6 @@ export default function TaskPage() {
                     {currentStimulus.caption}
                   </span>
                 </p>
-              </div>
-              <div className="caption-display caption-display--question">
-                <h2>Question</h2>
-                <QuestionPanel
-                  key={`questions-${currentTrialIndex}`}
-                  hideTitle
-                  onResponsesChange={handleResponsesChange}
-                  disabled={isSubmitting}
-                />
               </div>
             </div>
 

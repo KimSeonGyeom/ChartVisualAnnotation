@@ -111,7 +111,7 @@ export default function IntroductionPage() {
             </div>
 
             <p>
-              <strong>System Requirements:</strong> This study is designed for laptop/desktop screens (recommended width: 1200px or wider). Please use a display setting where no horizontal scrolling is needed.
+              <strong>System Requirements:</strong> This study is designed for laptop/desktop screens (recommended width: 1200px or wider). Please adjust the zoom level so that no horizontal scrolling is needed.
             </p>
           </section>
 

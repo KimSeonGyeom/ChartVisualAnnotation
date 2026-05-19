@@ -44,7 +44,7 @@ function buildPrompt(caption) {
 Caption: ${caption}
 
 **Task:**
-Annotate the given chart based on the caption and the user's intent.
+Annotate the given chart based on the caption.
 When annotating the chart, please strictly follow all the guidelines below.
 
 **Guidelines:**

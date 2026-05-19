@@ -40,16 +40,14 @@
   margin-bottom: 1rem;
 }
 
-.review-caption-text,
-.review-intent-text {
+.review-caption-text {
   font-size: 1.1rem;
   color: #333;
   margin: 0.4rem 0;
   line-height: 1.6;
 }
 
-.review-caption-text strong,
-.review-intent-text strong {
+.review-caption-text strong {
   color: #111;
 }
 

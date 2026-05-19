@@ -1,305 +1,39 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { fabric } from 'fabric';
 import { useDrawingStore } from '../../stores/useDrawingStore';
+import {
+  CANVAS_JSON_PROPS,
+  applyAnnotationObject,
+  analyzeSelectionColors,
+  applyTextboxEditingBorder,
+  applyTextboxObject,
+  beginTextboxInitialEntry,
+  cloneFabricJson,
+  collectSelectedAnnotations,
+  colorToKey,
+  configureCanvasSelection,
+  createCvaTextbox,
+  createDeleteObjectHandler,
+  lockTextboxContent,
+  CVA_TEXTBOX_DEFAULT_H,
+  CVA_TEXTBOX_DEFAULT_W,
+  enforceTextboxCharLimit,
+  hexToRgba,
+  isCvaTextbox,
+  normalizeTextboxDimensions,
+  rehydrateAnnotationObjects,
+  setAnnotationColor,
+  syncCanvasToolMode,
+} from './chartCanvasFabric';
 
 const getActiveTool = () => useDrawingStore.getState().activeTool;
 
-/** Eraser stroke is thicker than the pen so it is usable; matches the hollow guide ring diameter. */
-function getEraserBrushWidth(penWidth) {
-  const base = Math.max(Math.round(Number(penWidth) * 2.5), 22);
-  return Math.max(15, Math.round(base * (2 / 3)));
-}
-
-/** Semi-transparent preview on the upper canvas while dragging the eraser (stroke removal is applied on mouse up). */
-const ERASER_PREVIEW_COLOR = 'rgba(90, 90, 90, 0.4)';
-
-/** Include on `canvas.toJSON` so undo/redo and eraser keep user rectangles. */
-const CANVAS_JSON_PROPS = ['cvaRect'];
-
-function hexToRgba(hex, alpha) {
-  if (!hex || typeof hex !== 'string') return `rgba(0,0,0,${alpha})`;
-  let h = hex.replace('#', '');
-  if (h.length === 3) {
-    h = h.split('')
-      .map((c) => c + c)
-      .join('');
-  }
-  const n = parseInt(h, 16);
-  if (Number.isNaN(n)) return `rgba(0,0,0,${alpha})`;
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-function distancePointToSegment(px, py, x1, y1, x2, y2) {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const len2 = dx * dx + dy * dy;
-  if (len2 < 1e-12) return Math.hypot(px - x1, py - y1);
-  let t = ((px - x1) * dx + (py - y1) * dy) / len2;
-  t = Math.max(0, Math.min(1, t));
-  const ix = x1 + t * dx;
-  const iy = y1 + t * dy;
-  return Math.hypot(px - ix, py - iy);
-}
-
-function pathVertexToCanvas(pathObj, vx, vy) {
-  const ox = pathObj.pathOffset?.x || 0;
-  const oy = pathObj.pathOffset?.y || 0;
-  const local = new fabric.Point(vx - ox, vy - oy);
-  return fabric.util.transformPoint(local, pathObj.calcTransformMatrix());
-}
-
-function sampleCubic(ax, ay, c1x, c1y, c2x, c2y, bx, by, toCanvas, out, steps = 10) {
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const u = 1 - t;
-    const u3 = u * u * u;
-    const u2 = u * u;
-    const t2 = t * t;
-    const t3 = t2 * t;
-    const x = u3 * ax + 3 * u2 * t * c1x + 3 * u * t2 * c2x + t3 * bx;
-    const y = u3 * ay + 3 * u2 * t * c1y + 3 * u * t2 * c2y + t3 * by;
-    out.push(toCanvas(x, y));
-  }
-}
-
-function sampleQuad(ax, ay, qx, qy, bx, by, toCanvas, out, steps = 8) {
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const u = 1 - t;
-    const x = u * u * ax + 2 * u * t * qx + t * t * bx;
-    const y = u * u * ay + 2 * u * t * qy + t * t * by;
-    out.push(toCanvas(x, y));
-  }
-}
-
-/** Canvas-space points along a fabric.Path (stroke centerline approximation). */
-function samplePathStrokePoints(pathObj) {
-  const out = [];
-  const path = pathObj.path;
-  if (!path?.length) return out;
-
-  const tc = (vx, vy) => pathVertexToCanvas(pathObj, vx, vy);
-
-  let x = 0;
-  let y = 0;
-  let sx = 0;
-  let sy = 0;
-
-  const pushUnique = (p) => {
-    const last = out[out.length - 1];
-    if (!last || last.x !== p.x || last.y !== p.y) out.push(p);
-  };
-
-  for (let i = 0; i < path.length; i++) {
-    const seg = path[i];
-    const cmd = String(seg[0]).toUpperCase();
-
-    switch (cmd) {
-      case 'M': {
-        x = seg[1];
-        y = seg[2];
-        sx = x;
-        sy = y;
-        pushUnique(tc(x, y));
-        break;
-      }
-      case 'L': {
-        const nx = seg[1];
-        const ny = seg[2];
-        pushUnique(tc(nx, ny));
-        x = nx;
-        y = ny;
-        break;
-      }
-      case 'C': {
-        const c1x = seg[1];
-        const c1y = seg[2];
-        const c2x = seg[3];
-        const c2y = seg[4];
-        const bx = seg[5];
-        const by = seg[6];
-        sampleCubic(x, y, c1x, c1y, c2x, c2y, bx, by, tc, out, 10);
-        x = bx;
-        y = by;
-        break;
-      }
-      case 'Q': {
-        const qx = seg[1];
-        const qy = seg[2];
-        const bx = seg[3];
-        const by = seg[4];
-        sampleQuad(x, y, qx, qy, bx, by, tc, out, 8);
-        x = bx;
-        y = by;
-        break;
-      }
-      case 'Z': {
-        if (x !== sx || y !== sy) {
-          pushUnique(tc(sx, sy));
-          x = sx;
-          y = sy;
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  return out;
-}
-
-/** Only freehand pen strokes (`fabric.Path`) are on the canvas. */
-function canObjectBeErased(obj) {
-  return !!(obj && obj.visible && obj.type === 'path');
-}
-
-function collectPathStrokeSamples(pathObj, out, budget = { left: 400 }) {
-  if (!pathObj || pathObj.type !== 'path' || budget.left <= 0) return;
-  const pts = samplePathStrokePoints(pathObj);
-  const step = Math.max(1, Math.ceil(pts.length / 120));
-  for (let i = 0; i < pts.length && budget.left > 0; i += step) {
-    out.push(pts[i]);
-    budget.left--;
-  }
-}
-
-function minDistanceToEraserStroke(px, py, eraserPts, eraserWidth) {
-  const r = eraserWidth / 2;
-  if (eraserPts.length === 0) return Infinity;
-  if (eraserPts.length === 1) {
-    return Math.hypot(px - eraserPts[0].x, py - eraserPts[0].y) - r;
-  }
-  let minD = Infinity;
-  for (let i = 0; i < eraserPts.length - 1; i++) {
-    const d = distancePointToSegment(
-      px,
-      py,
-      eraserPts[i].x,
-      eraserPts[i].y,
-      eraserPts[i + 1].x,
-      eraserPts[i + 1].y
-    );
-    minD = Math.min(minD, d);
-  }
-  return minD - r;
-}
-
-function pathHitByEraser(pathObj, eraserPts, eraserWidth) {
-  const samples = [];
-  collectPathStrokeSamples(pathObj, samples, { left: 500 });
-  if (samples.length === 0) return false;
-
-  const sw = pathObj.strokeWidth || 2;
-  const penRadius = sw / 2;
-  const epsilon = 3;
-
-  for (const p of samples) {
-    if (minDistanceToEraserStroke(p.x, p.y, eraserPts, eraserWidth) <= penRadius + epsilon) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/** Remove pen paths whose geometry overlaps the eraser stroke; remove rects whose bounds overlap the eraser stroke bounds. */
-function removeStrokesOverlappingEraser(canvas, eraserPoints, eraserWidth) {
-  const paths = canvas.getObjects().filter((obj) => canObjectBeErased(obj));
-  const rects = canvas.getObjects().filter((obj) => obj && obj.visible && obj.type === 'rect' && obj.cvaRect);
-  const toRemovePaths = paths.filter((obj) => pathHitByEraser(obj, eraserPoints, eraserWidth));
-  const pad = eraserWidth / 2 + 4;
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const p of eraserPoints) {
-    minX = Math.min(minX, p.x);
-    maxX = Math.max(maxX, p.x);
-    minY = Math.min(minY, p.y);
-    maxY = Math.max(maxY, p.y);
-  }
-  const toRemoveRects = rects.filter((rect) => {
-    const br = rect.getBoundingRect(true);
-    const boxLeft = minX - pad;
-    const boxRight = maxX + pad;
-    const boxTop = minY - pad;
-    const boxBottom = maxY + pad;
-    return !(boxRight < br.left || boxLeft > br.left + br.width || boxBottom < br.top || boxTop > br.top + br.height);
-  });
-  toRemovePaths.forEach((obj) => canvas.remove(obj));
-  toRemoveRects.forEach((obj) => canvas.remove(obj));
-}
-
-function patchPencilBrushForStrokeEraser(pencilBrush, isEraserMode) {
-  const protoFinalize = fabric.PencilBrush.prototype._finalizeAndAddPath;
-  const protoDown = fabric.PencilBrush.prototype.onMouseDown;
-
-  pencilBrush.onMouseDown = function (pointer, options) {
-    this.__cvaEraserStroke = !!isEraserMode();
-    return protoDown.call(this, pointer, options);
-  };
-
-  pencilBrush._finalizeAndAddPath = function () {
-    if (!this.__cvaEraserStroke) {
-      return protoFinalize.call(this);
-    }
-
-    this.canvas.clearContext(this.canvas.contextTop);
-    this.oldEnd = undefined;
-
-    if (this.decimate) {
-      this._points = this.decimatePoints(this._points, this.decimate);
-    }
-
-    if (this._points.length === 0) {
-      this._resetShadow();
-      this.canvas.requestRenderAll();
-      return;
-    }
-
-    if (this._points.length < 2) {
-      const p = this._points[0];
-      removeStrokesOverlappingEraser(this.canvas, [p], this.width);
-      this._resetShadow();
-      this.canvas.requestRenderAll();
-      const plain = this._points.map((q) => ({ x: q.x, y: q.y }));
-      this.canvas.fire('eraser:stroke:end', { points: plain, brushWidth: this.width });
-      return;
-    }
-
-    const pathData = this.convertPointsToSVGPath(this._points);
-    if (this._isEmptySVGPath(pathData)) {
-      this.canvas.requestRenderAll();
-      this._resetShadow();
-      return;
-    }
-
-    removeStrokesOverlappingEraser(this.canvas, this._points, this.width);
-    this._resetShadow();
-    this.canvas.requestRenderAll();
-
-    const plain = this._points.map((q) => ({ x: q.x, y: q.y }));
-    this.canvas.fire('eraser:stroke:end', { points: plain, brushWidth: this.width });
-  };
-}
-
-/**
- * Fabric loadFromJSON only shallow-clones the argument; enliven can mutate nested `objects`.
- * Deep snapshots keep undo/redo stacks stable.
- */
-function cloneFabricJson(json) {
-  return JSON.parse(JSON.stringify(json));
-}
-
 /** `width` / `height` = maximum box; after the chart image loads the canvas shrinks to the fitted size (no empty margin). */
-export default function ChartCanvas({ 
-  imageUrl, 
+export default function ChartCanvas({
+  imageUrl,
   onCanvasReady,
   width = 700,
-  height = 500 
+  height = 500,
 }) {
   const canvasRef = useRef(null);
   const fabricRef = useRef(null);
@@ -307,11 +41,9 @@ export default function ChartCanvas({
   const underlayLayoutRef = useRef({ dw: 0, nw: 0, nh: 0 });
   const historyRef = useRef([]);
   const historyIndexRef = useRef(-1);
-  /** Tool at start of current free-draw stroke (fixes any store/event ordering issues). */
-  const freeDrawToolRef = useRef('pen');
-  
-  const [eraserGuide, setEraserGuide] = useState(null);
-  /** Canvas + stack size after fitting chart to maxWidth×maxHeight (no letterboxing). */
+  const saveToHistoryRef = useRef(() => {});
+  const moveHistoryTimerRef = useRef(null);
+
   const [viewSize, setViewSize] = useState({ w: width, h: height });
 
   const {
@@ -321,14 +53,75 @@ export default function ChartCanvas({
     onStrokeEnd,
     onUndo: logUndo,
     onClear: logClear,
+    onDelete: logDelete,
+    setSelectionColorSummary,
+    registerSelectionColorApplier,
   } = useDrawingStore();
+
+  const refreshSelectionColorSummary = useCallback(() => {
+    const canvas = fabricRef.current;
+    if (!canvas || getActiveTool() !== 'select') {
+      setSelectionColorSummary({ hasSelection: false, uniformColor: null });
+      return;
+    }
+    setSelectionColorSummary(analyzeSelectionColors(canvas.getActiveObject()));
+  }, [setSelectionColorSummary]);
+
+  const saveToHistory = useCallback(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+
+    const json = cloneFabricJson(canvas.toJSON(CANVAS_JSON_PROPS));
+    historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
+    historyRef.current.push(json);
+    historyIndexRef.current = historyRef.current.length - 1;
+  }, []);
+
+  saveToHistoryRef.current = saveToHistory;
+
+  const deleteHandlerRef = useRef(
+    createDeleteObjectHandler(() => {
+      logDelete();
+      saveToHistoryRef.current();
+    })
+  );
+
+  const afterHistoryLoad = useCallback(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    rehydrateAnnotationObjects(canvas, deleteHandlerRef.current);
+    syncCanvasToolMode(canvas, getActiveTool());
+    refreshSelectionColorSummary();
+    canvas.renderAll();
+  }, [refreshSelectionColorSummary]);
+
+  useEffect(() => {
+    registerSelectionColorApplier((color) => {
+      const canvas = fabricRef.current;
+      if (!canvas) return;
+
+      const active = canvas.getActiveObject();
+      const targets = collectSelectedAnnotations(active);
+      if (!targets.length) return;
+
+      targets.forEach((obj) => setAnnotationColor(obj, color));
+      canvas.requestRenderAll();
+      saveToHistoryRef.current();
+      setSelectionColorSummary({
+        hasSelection: true,
+        uniformColor: colorToKey(color),
+      });
+    });
+
+    return () => registerSelectionColorApplier(null);
+  }, [registerSelectionColorApplier, setSelectionColorSummary]);
 
   // Initialize Fabric canvas
   useEffect(() => {
     if (!canvasRef.current) return;
 
     const canvas = new fabric.Canvas(canvasRef.current, {
-      isDrawingMode: activeTool === 'pen' || activeTool === 'eraser',
+      isDrawingMode: activeTool === 'pen',
       width,
       height,
       backgroundColor: 'transparent',
@@ -343,22 +136,12 @@ export default function ChartCanvas({
       baseSetBrushStyles.call(this, ctx);
       ctx.globalCompositeOperation = 'source-over';
     };
-    patchPencilBrushForStrokeEraser(pencilBrush, () => getActiveTool() === 'eraser');
     canvas.freeDrawingBrush = pencilBrush;
     canvas.freeDrawingBrush.color = config.color;
     canvas.freeDrawingBrush.width = config.width;
 
     fabricRef.current = canvas;
-
-    if (onCanvasReady) {
-      onCanvasReady({
-        export: () => exportCanvas(),
-        clear: () => clearCanvas(),
-        undo: () => undoAction(),
-        redo: () => redoAction(),
-        getCanvas: () => canvas,
-      });
-    }
+    syncCanvasToolMode(canvas, getActiveTool());
 
     return () => {
       canvas.dispose();
@@ -368,53 +151,36 @@ export default function ChartCanvas({
   useEffect(() => {
     if (!fabricRef.current) return;
     const canvas = fabricRef.current;
-    canvas.isDrawingMode = activeTool === 'pen' || activeTool === 'eraser';
-    canvas.skipTargetFind = true;
-    canvas.selection = false;
-  }, [activeTool]);
 
-  // Brush width & color (eraser: wide semi-transparent preview stroke; objects removed on mouse up)
+    canvas.getObjects().forEach((obj) => {
+      if (isCvaTextbox(obj) && obj.isEditing) {
+        lockTextboxContent(obj, canvas);
+      }
+    });
+
+    syncCanvasToolMode(canvas, activeTool);
+    refreshSelectionColorSummary();
+  }, [activeTool, refreshSelectionColorSummary]);
+
   useEffect(() => {
     if (!fabricRef.current) return;
     const brush = fabricRef.current.freeDrawingBrush;
     if (!brush) return;
-    const strokeW = activeTool === 'eraser' ? getEraserBrushWidth(config.width) : config.width;
-    brush.width = strokeW;
-    brush.color = activeTool === 'eraser' ? ERASER_PREVIEW_COLOR : config.color;
-  }, [activeTool, config.color, config.width]);
+    brush.width = config.width;
+    brush.color = config.color;
+  }, [config.color, config.width]);
 
   useEffect(() => {
-    if (activeTool !== 'eraser') setEraserGuide(null);
-  }, [activeTool]);
-
-  // Hollow ring follows pointer so users see the eraser footprint (Fabric has no built-in eraser cursor).
-  useEffect(() => {
-    if (!fabricRef.current) return;
-
     const canvas = fabricRef.current;
+    if (!canvas) return;
+    const active = canvas.getActiveObject();
+    if (isCvaTextbox(active) && active.isEditing) {
+      active.set('fill', config.color);
+      canvas.requestRenderAll();
+    }
+  }, [config.color]); // only during first placement entry
 
-    const onMove = (opt) => {
-      if (getActiveTool() !== 'eraser') {
-        setEraserGuide(null);
-        return;
-      }
-      const p = canvas.getPointer(opt.e);
-      const d = getEraserBrushWidth(useDrawingStore.getState().config.width);
-      setEraserGuide({ x: p.x, y: p.y, d });
-    };
-
-    const clear = () => setEraserGuide(null);
-
-    canvas.on('mouse:move', onMove);
-    canvas.on('mouse:out', clear);
-
-    return () => {
-      canvas.off('mouse:move', onMove);
-      canvas.off('mouse:out', clear);
-    };
-  }, [width, height, imageUrl, activeTool, viewSize.w, viewSize.h]);
-
-  // Chart as HTML underlay so eraser does not remove the chart image
+  // Chart as HTML underlay (not a Fabric object)
   useEffect(() => {
     setViewSize({ w: width, h: height });
 
@@ -443,6 +209,7 @@ export default function ChartCanvas({
       setViewSize({ w: cw, h: ch });
 
       canvas.getObjects().forEach((obj) => canvas.remove(obj));
+      canvas.discardActiveObject();
       canvas.renderAll();
       historyRef.current = [cloneFabricJson(canvas.toJSON(CANVAS_JSON_PROPS))];
       historyIndexRef.current = 0;
@@ -459,16 +226,71 @@ export default function ChartCanvas({
     };
   }, [imageUrl, width, height]);
 
-  // History management
-  const saveToHistory = useCallback(() => {
+  // Shift-click / marquee ActiveSelection: replace default scale/rotate handles
+  useEffect(() => {
+    if (!fabricRef.current) return;
     const canvas = fabricRef.current;
-    if (!canvas) return;
 
-    const json = cloneFabricJson(canvas.toJSON(CANVAS_JSON_PROPS));
-    historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
-    historyRef.current.push(json);
-    historyIndexRef.current = historyRef.current.length - 1;
-  }, []);
+    const onSelectionChange = () => {
+      const active = canvas.getActiveObject();
+      // Only lock in Select — Text tool activates the box for first-time entry.
+      if (getActiveTool() === 'select' && active?.cvaTextbox && !active.isEditing) {
+        lockTextboxContent(active, canvas);
+      }
+
+      if (getActiveTool() !== 'select') return;
+      configureCanvasSelection(active, deleteHandlerRef.current);
+      refreshSelectionColorSummary();
+      canvas.requestRenderAll();
+    };
+
+    const onSelectionCleared = () => {
+      if (getActiveTool() !== 'select') return;
+      refreshSelectionColorSummary();
+    };
+
+    canvas.on('selection:created', onSelectionChange);
+    canvas.on('selection:updated', onSelectionChange);
+    canvas.on('selection:cleared', onSelectionCleared);
+
+    return () => {
+      canvas.off('selection:created', onSelectionChange);
+      canvas.off('selection:updated', onSelectionChange);
+      canvas.off('selection:cleared', onSelectionCleared);
+    };
+  }, [width, height, imageUrl, refreshSelectionColorSummary]);
+
+  // Debounced history entry after moving a selection
+  useEffect(() => {
+    if (!fabricRef.current) return;
+    const canvas = fabricRef.current;
+
+    const onTextboxScaled = (e) => {
+      const target = e?.target;
+      if (!target || !isCvaTextbox(target) || getActiveTool() !== 'select') return;
+      normalizeTextboxDimensions(target);
+      canvas.requestRenderAll();
+    };
+
+    const onModified = (e) => {
+      onTextboxScaled(e);
+
+      if (getActiveTool() !== 'select') return;
+      if (moveHistoryTimerRef.current) clearTimeout(moveHistoryTimerRef.current);
+      moveHistoryTimerRef.current = setTimeout(() => {
+        saveToHistoryRef.current();
+        moveHistoryTimerRef.current = null;
+      }, 300);
+    };
+
+    canvas.on('object:scaling', onTextboxScaled);
+    canvas.on('object:modified', onModified);
+    return () => {
+      canvas.off('object:scaling', onTextboxScaled);
+      canvas.off('object:modified', onModified);
+      if (moveHistoryTimerRef.current) clearTimeout(moveHistoryTimerRef.current);
+    };
+  }, [width, height, imageUrl]);
 
   // Rectangle highlight: drag to create axis-aligned rect (30% fill)
   useEffect(() => {
@@ -543,6 +365,9 @@ export default function ChartCanvas({
         return;
       }
 
+      applyAnnotationObject(rect, deleteHandlerRef.current);
+      syncCanvasToolMode(canvas, getActiveTool());
+
       onStrokeStart();
       onStrokeEnd(Math.hypot(rw, rh), 4);
       saveToHistory();
@@ -570,30 +395,118 @@ export default function ChartCanvas({
     };
   }, [activeTool, onStrokeStart, onStrokeEnd, saveToHistory, width, height]);
 
-  // Track pen / eraser stroke events
+  // Textbox: click empty chart to place; click existing box to select (no re-editing text)
   useEffect(() => {
     if (!fabricRef.current) return;
-    if (activeTool !== 'pen' && activeTool !== 'eraser') return;
+    if (activeTool !== 'text') return undefined;
+
+    const canvas = fabricRef.current;
+
+    const onDown = (opt) => {
+      if (getActiveTool() !== 'text') return;
+
+      const target = opt.target;
+      if (target && isCvaTextbox(target)) {
+        lockTextboxContent(target, canvas);
+        canvas.setActiveObject(target);
+        canvas.requestRenderAll();
+        return;
+      }
+
+      const p = canvas.getPointer(opt.e);
+      const { config } = useDrawingStore.getState();
+      const textbox = createCvaTextbox({
+        left: p.x,
+        top: p.y,
+        width: CVA_TEXTBOX_DEFAULT_W,
+        height: CVA_TEXTBOX_DEFAULT_H,
+        fill: config.color,
+      });
+
+      applyTextboxObject(textbox);
+      canvas.add(textbox);
+      syncCanvasToolMode(canvas, 'text');
+      onStrokeStart();
+      beginTextboxInitialEntry(textbox, canvas);
+    };
+
+    canvas.on('mouse:down', onDown);
+
+    return () => {
+      canvas.off('mouse:down', onDown);
+    };
+  }, [activeTool, onStrokeStart, width, height]);
+
+  // Textbox: 16-char cap, fixed line wrap height
+  useEffect(() => {
+    if (!fabricRef.current) return;
+    const canvas = fabricRef.current;
+
+    const onTextChanged = (e) => {
+      const obj = e.target;
+      if (!isCvaTextbox(obj)) return;
+      if (obj.isEditing) {
+        applyTextboxEditingBorder(obj);
+      }
+      if (enforceTextboxCharLimit(obj)) {
+        canvas.requestRenderAll();
+      }
+      if (obj.cvaBoxHeight != null) {
+        obj.set({ height: obj.cvaBoxHeight, dynamicMinHeight: false });
+      }
+    };
+
+    const onEditingExited = (e) => {
+      const obj = e.target;
+      if (!isCvaTextbox(obj)) return;
+
+      enforceTextboxCharLimit(obj);
+      normalizeTextboxDimensions(obj);
+      lockTextboxContent(obj, canvas);
+
+      const text = String(obj.text ?? '').trim();
+      if (!text) {
+        canvas.remove(obj);
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+        return;
+      }
+
+      syncCanvasToolMode(canvas, getActiveTool());
+      onStrokeEnd(0, text.length);
+      saveToHistoryRef.current();
+      canvas.requestRenderAll();
+    };
+
+    canvas.on('text:changed', onTextChanged);
+    canvas.on('text:editing:exited', onEditingExited);
+
+    return () => {
+      canvas.off('text:changed', onTextChanged);
+      canvas.off('text:editing:exited', onEditingExited);
+    };
+  }, [onStrokeEnd, width, height, imageUrl]);
+
+  // Pen stroke events
+  useEffect(() => {
+    if (!fabricRef.current) return;
+    if (activeTool !== 'pen') return;
 
     const canvas = fabricRef.current;
 
     const handleMouseDown = () => {
-      freeDrawToolRef.current = getActiveTool();
       onStrokeStart();
     };
 
     const handlePathCreated = (e) => {
-      if (freeDrawToolRef.current === 'eraser' || getActiveTool() === 'eraser') {
-        return;
-      }
-
       const path = e.path;
       const { penLineStyle, penDashPattern } = useDrawingStore.getState();
       if (penLineStyle === 'dashed' && Array.isArray(penDashPattern) && penDashPattern.length >= 2) {
         path.set({ strokeDashArray: [...penDashPattern] });
-        path.setCoords();
-        canvas.requestRenderAll();
       }
+
+      applyAnnotationObject(path, deleteHandlerRef.current);
+      syncCanvasToolMode(canvas, getActiveTool());
 
       let pathLength = 0;
       if (path.path) {
@@ -609,28 +522,18 @@ export default function ChartCanvas({
       }
 
       const pointCount = path.path ? path.path.length : 0;
+      path.setCoords();
+      canvas.requestRenderAll();
       onStrokeEnd(pathLength, pointCount);
-      saveToHistory();
-    };
-
-    const handleEraserStrokeEnd = (evt) => {
-      const pts = evt.points || [];
-      let pathLength = 0;
-      for (let i = 1; i < pts.length; i++) {
-        pathLength += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-      }
-      onStrokeEnd(pathLength, pts.length);
       saveToHistory();
     };
 
     canvas.on('mouse:down', handleMouseDown);
     canvas.on('path:created', handlePathCreated);
-    canvas.on('eraser:stroke:end', handleEraserStrokeEnd);
 
     return () => {
       canvas.off('mouse:down', handleMouseDown);
       canvas.off('path:created', handlePathCreated);
-      canvas.off('eraser:stroke:end', handleEraserStrokeEnd);
     };
   }, [activeTool, onStrokeStart, onStrokeEnd, saveToHistory, width, height]);
 
@@ -642,10 +545,10 @@ export default function ChartCanvas({
     const prevState = historyRef.current[historyIndexRef.current];
 
     canvas.loadFromJSON(cloneFabricJson(prevState), () => {
-      canvas.renderAll();
+      afterHistoryLoad();
       logUndo();
     });
-  }, [logUndo]);
+  }, [logUndo, afterHistoryLoad]);
 
   const redoAction = useCallback(() => {
     const canvas = fabricRef.current;
@@ -655,19 +558,18 @@ export default function ChartCanvas({
     const nextState = historyRef.current[historyIndexRef.current];
 
     canvas.loadFromJSON(cloneFabricJson(nextState), () => {
-      canvas.renderAll();
+      afterHistoryLoad();
     });
-  }, []);
+  }, [afterHistoryLoad]);
 
   const clearCanvas = useCallback(() => {
     const canvas = fabricRef.current;
     if (!canvas) return;
 
-    canvas.getObjects().forEach((obj) => {
-      canvas.remove(obj);
-    });
+    canvas.getObjects().forEach((obj) => canvas.remove(obj));
+    canvas.discardActiveObject();
     canvas.renderAll();
-    
+
     logClear();
     saveToHistory();
   }, [logClear, saveToHistory]);
@@ -678,19 +580,18 @@ export default function ChartCanvas({
     const layout = underlayLayoutRef.current;
     if (!canvas) return null;
 
+    canvas.discardActiveObject();
     canvas.renderAll();
 
-    /** Use natural (original) size for export */
     const nw = layout.nw || canvas.getWidth();
     const nh = layout.nh || canvas.getHeight();
-    
+
     const out = document.createElement('canvas');
-    out.width = nw;  // Export at original size
+    out.width = nw;
     out.height = nh;
     const ctx = out.getContext('2d');
 
     if (imgEl?.complete && layout.dw > 0 && imgEl.naturalWidth) {
-      // Draw chart at original size
       ctx.drawImage(imgEl, 0, 0, nw, nh);
     } else {
       ctx.fillStyle = '#ffffff';
@@ -707,46 +608,37 @@ export default function ChartCanvas({
     }
 
     const raw = out.toDataURL('image/jpeg', 0.92);
-    const imageData = raw.startsWith('data:')
-      ? raw
-      : `data:image/jpeg;base64,${raw}`;
+    const imageData = raw.startsWith('data:') ? raw : `data:image/jpeg;base64,${raw}`;
 
-    return {
-      imageData,
-    };
+    return { imageData };
   }, []);
+
+  useEffect(() => {
+    if (!fabricRef.current || !onCanvasReady) return;
+    const canvas = fabricRef.current;
+    onCanvasReady({
+      export: () => exportCanvas(),
+      clear: () => clearCanvas(),
+      undo: () => undoAction(),
+      redo: () => redoAction(),
+      getCanvas: () => canvas,
+    });
+  }, [onCanvasReady, exportCanvas, clearCanvas, undoAction, redoAction]);
+
+  const stackClass =
+    activeTool === 'rect' || activeTool === 'text'
+      ? 'chart-stack chart-stack--rect'
+      : activeTool === 'select'
+        ? 'chart-stack chart-stack--select'
+        : 'chart-stack';
 
   return (
     <div className="chart-canvas-container">
-      <div
-        className={
-          activeTool === 'eraser'
-            ? 'chart-stack chart-stack--eraser'
-            : activeTool === 'rect'
-              ? 'chart-stack chart-stack--rect'
-              : 'chart-stack'
-        }
-        style={{ width: viewSize.w, height: viewSize.h }}
-        onMouseLeave={() => activeTool === 'eraser' && setEraserGuide(null)}
-      >
+      <div className={stackClass} style={{ width: viewSize.w, height: viewSize.h }}>
         <img ref={underlayImgRef} alt="" className="chart-underlay" />
         <div className="chart-fabric-layer" style={{ width: viewSize.w, height: viewSize.h }}>
           <canvas ref={canvasRef} />
         </div>
-        {activeTool === 'eraser' && eraserGuide && (
-          <div
-            className="eraser-cursor-guide"
-            style={{
-              left: eraserGuide.x,
-              top: eraserGuide.y,
-              width: eraserGuide.d,
-              height: eraserGuide.d,
-              marginLeft: -eraserGuide.d / 2,
-              marginTop: -eraserGuide.d / 2,
-            }}
-            aria-hidden
-          />
-        )}
       </div>
     </div>
   );

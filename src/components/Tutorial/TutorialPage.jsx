@@ -100,7 +100,6 @@ export default function TutorialPage() {
             <h2 className="tutorial-section-label">Drawing Tool Instructions</h2>
             <DrawingToolInstructions />
 
-            <h2 className="tutorial-section-label" style={{marginTop: '1.5rem'}}>Practice Canvas</h2>
             <div className="tutorial-comparison">
               <div className="tutorial-comparison-toolbar">
                 <div className="canvas-wrapper tutorial-practice-canvas-wrap">
@@ -121,13 +120,13 @@ export default function TutorialPage() {
                   onCanvasReady={handleCanvasReady}
                 />
                 <p className="tutorial-image-label">
-                  <strong>Left: practice canvas (same tool as in the task).</strong>
+                  <strong>Left: practice canvas</strong>
                 </p>
               </div>
               <div className="tutorial-comparison-sample">
                 <img src={`/${chartFolder}/tutorial_example.png`} alt="Chart with example visual highlights" />
                 <p className="tutorial-image-label">
-                  <strong>Right: example highlights based on the caption.</strong>
+                  <strong>Right: example highlights based on the caption</strong>
                 </p>
               </div>
             </div>
@@ -142,9 +141,9 @@ export default function TutorialPage() {
         <p className="tutorial-desc">
           Your goal is to draw <strong>visual highlights</strong> on the <strong>chart</strong> to help others understand the caption in a more friendly and clear way.
           <br />
-          Please refer to the <strong>Drawing Tool Instructions</strong> above to understand how to use the tools to draw visual highlights.
+          Please refer to the <strong>Drawing Tool Instructions</strong> above to understand how to use the tools.
           <br />
-          <strong>TODO:</strong> To show that you have understood how to use the tools to draw visual highlights, draw the visual highlights on the left chart in the same way as the example on the right.
+          <strong>TO-DO:</strong> To show that you have understood how to use the tools, draw the visual highlights on the left chart in the same way as the example on the right.
         </p>
 
         {saveError && <p className="error-message tutorial-save-error">{saveError}</p>}
