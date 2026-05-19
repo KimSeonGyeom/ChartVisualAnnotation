@@ -17,7 +17,7 @@ export default function IntroductionPage() {
   const { 
     initializeSession, 
     setConsent, 
-    loadSuneungData,
+    loadChartCaptions,
     assignSet,
   } = useStudyStore();
 
@@ -29,12 +29,12 @@ export default function IntroductionPage() {
     }
   }, [searchParams]);
 
-  // Load suneung data on mount
+  // Load caption.json on mount
   useEffect(() => {
-    loadSuneungData().catch(err => {
-      console.error('Failed to load suneung data:', err);
+    loadChartCaptions().catch(err => {
+      console.error('Failed to load chart captions:', err);
     });
-  }, [loadSuneungData]);
+  }, [loadChartCaptions]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,8 +63,7 @@ export default function IntroductionPage() {
       
       // 2. Initialize Firebase session with chart experience
       const studyId = searchParams.get('STUDY_ID') || 'default_study';
-      const sessionId = searchParams.get('SESSION_ID') || `session_${Date.now()}`;
-      await initializeSession(prolificId, studyId, sessionId, chartExperience);
+      await initializeSession(prolificId, studyId, chartExperience);
       
       // 3. Go to tutorial
       navigate('/tutorial');
@@ -105,7 +104,7 @@ export default function IntroductionPage() {
               <h3>What you will do:</h3>
               <ol>
                 <li>View a chart image with a caption describing an insight</li>
-                <li>Draw visual highlights on the chart based on your intent and explain your intent in text</li>
+                <li>Draw visual highlights on the chart to help others understand the caption more easily</li>
                 <li>Repeat for 3 chart-caption pairs</li>
                 <li>Review and evaluate generated visual annotations for each chart</li>
               </ol>

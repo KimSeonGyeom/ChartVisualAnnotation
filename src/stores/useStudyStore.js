@@ -6,9 +6,9 @@ import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../services/firebase';
 import studyConfig from '../config/study.json';
 
-const NUM_SETS = 4; // suneung_set_0 ~ suneung_set_3
+const NUM_SETS = 2; // Firestore `sets` collection: set_0, set_1 only
 
-/** Required; no fallback — avoids loading charts from the wrong folder. */
+// Required; no fallback — avoids loading charts from the wrong folder.
 export function getChartAssetFolder() {
   const raw = studyConfig.chartAssetFolder;
   const folder = typeof raw === 'string' ? raw.trim() : '';
@@ -20,34 +20,56 @@ export function getChartAssetFolder() {
   return folder;
 }
 
-/** Main task trials only (excludes tutorial practice), matches getSetStimuli ids: trial_1, trial_2, … */
+// Main task trials only (excludes tutorial practice), matches getSetStimuli ids: trial_1, trial_2, …
 function isMainTaskTrialId(trialId) {
   return typeof trialId === 'string' && /^trial_\d+$/.test(trialId);
 }
 
+/**
+ * Firestore `sets` docs: `charts` (int[]). Optional `type`.
+ * Legacy docs may use `indices` instead of `charts` — we still accept that.
+ */
+function normalizeAssignedSetDocument(setId, raw) {
+  const d = raw && typeof raw === 'object' ? raw : {};
+  let charts = [];
+  if (Array.isArray(d.charts) && d.charts.length > 0) {
+    charts = d.charts.map((n) => Number(n));
+  } else if (Array.isArray(d.indices) && d.indices.length > 0) {
+    charts = d.indices.map((n) => Number(n));
+  }
+  if (!charts.length) {
+    throw new Error(`Set ${setId} must define a non-empty "charts" array`);
+  }
+  const out = {
+    id: setId,
+    charts,
+  };
+  if (typeof d.type === 'string' && d.type.trim().length > 0) {
+    out.type = d.type.trim();
+  }
+  return out;
+}
+
 export const useStudyStore = create((set, get) => ({
-  // ==================== STATE ====================
+  // ─── STATE ───
   participant: null,
   currentTrialIndex: 0,
   trialTimings: [],
   isSubmitting: false,
-  sessionDocId: null,
   consentGiven: false,
   
   // Set assignment
-  assignedSet: null,  // { id: "suneung_set_0", type: "suneung", captionIndex: 0, indices: [...] }
-  suneungData: [],    // Chart captions from public/{chartAssetFolder}/caption.json
+  assignedSet: null,  // { id, charts, type? } — matches Firestore `sets` docs
+  chartCaptions: [],  // From public/{chartAssetFolder}/caption.json
 
-  // ==================== ACTIONS: SET ASSIGNMENT ====================
+  // ─── ACTIONS: SET ASSIGNMENT ───
 
-  /**
-   * Load caption data from public/{chartAssetFolder}/caption.json
-   */
-  loadSuneungData: async () => {
+  // Load caption data from public/{chartAssetFolder}/caption.json
+  loadChartCaptions: async () => {
     try {
       const response = await fetch(`/${getChartAssetFolder()}/caption.json`);
       const data = await response.json();
-      set({ suneungData: data });
+      set({ chartCaptions: data });
       return data;
     } catch (error) {
       console.error('Failed to load chart caption data:', error);
@@ -55,9 +77,7 @@ export const useStudyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * Assign a set using a global counter (cycles through set_0 ~ set_3)
-   */
+  // Assign a set using a global counter (cycles set_0 ↔ set_1)
   assignSet: async (prolificId) => {
     try {
       const counterRef = doc(db, 'config', 'assignment_counter');
@@ -68,14 +88,13 @@ export const useStudyStore = create((set, get) => ({
         const counterSnap = await transaction.get(counterRef);
         const currentCount = counterSnap.exists() ? counterSnap.data().count : 0;
         const setIndex = currentCount % NUM_SETS;
-        const setId = `suneung_set_${setIndex}`;
-
+        const setId = `set_${setIndex}`;
         const setSnap = await transaction.get(doc(db, 'sets', setId));
         if (!setSnap.exists()) {
           throw new Error(`Set ${setId} not found in Firestore`);
         }
 
-        setData = { id: setId, ...setSnap.data() };
+        setData = normalizeAssignedSetDocument(setId, setSnap.data());
 
         transaction.set(counterRef, { count: currentCount + 1 }, { merge: true });
       });
@@ -88,55 +107,46 @@ export const useStudyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * Get stimuli for current set
-   */
+  // Get stimuli for current set
   getSetStimuli: () => {
-    const { assignedSet, suneungData } = get();
-    if (!assignedSet || !suneungData.length) return [];
+    const { assignedSet, chartCaptions } = get();
+    if (!assignedSet || !chartCaptions.length) return [];
 
-    const captionIdx = assignedSet.captionIndex ?? 0;
     const folder = getChartAssetFolder();
 
-    return assignedSet.indices.map((index, order) => {
-      const chart = suneungData.find(c => c.id === index);
+    return assignedSet.charts.map((index, order) => {
+      const chart = chartCaptions.find((c) => c.id === index);
       const file = chart?.filename || `${index}.png`;
+      const caption =
+        chart && typeof chart.captions === 'string' ? chart.captions : '';
       return {
         id: `trial_${order + 1}`,
         imageIndex: index,
         imageUrl: `/${folder}/${file}`,
-        caption: chart?.captions[captionIdx] || '',
-        allCaptions: chart?.captions || [],
-        captionIndex: captionIdx,
+        caption,
         chartInfo: '',
         order: order + 1,
       };
     });
   },
 
-  /**
-   * No-op: sets are now reusable, completion is tracked via sessions
-   */
+  // No-op: sets are now reusable, completion is tracked via sessions
   completeSet: async () => {},
 
-  // ==================== ACTIONS: SESSION ====================
+  // ─── ACTIONS: SESSION ───
   
-  /**
-   * Initialize a new session in Firebase
-   */
-  initializeSession: async (prolificId, studyId, sessionId, chartExperience = null) => {
+  // `sessions/{prolificId}`; each trial/review stores `prolificId`.
+  initializeSession: async (prolificId, studyId, chartExperience = null) => {
     const { assignedSet } = get();
-    const sessionDocId = `${prolificId}_${Date.now()}`;
-    
+
     try {
-      await setDoc(doc(db, 'sessions', sessionDocId), {
+      await setDoc(doc(db, 'sessions', prolificId), {
         prolificId,
         studyId,
-        sessionId,
         chartExperience,
         chartAssetFolder: getChartAssetFolder(),
         assignedSetId: assignedSet?.id || null,
-        assignedIndices: assignedSet?.indices || [],
+        assignedCharts: assignedSet?.charts || [],
         startedAt: serverTimestamp(),
         status: 'in_progress',
         userAgent: navigator.userAgent,
@@ -150,33 +160,27 @@ export const useStudyStore = create((set, get) => ({
         participant: {
           prolificId,
           studyId,
-          sessionId,
           startedAt: Date.now(),
         },
-        sessionDocId,
         currentTrialIndex: 0,
         trialTimings: [],
       });
 
-      return sessionDocId;
+      return prolificId;
     } catch (error) {
       console.error('Failed to initialize session:', error);
       throw error;
     }
   },
 
-  /**
-   * Set consent status
-   */
+  // Set consent status
   setConsent: (given) => {
     set({ consentGiven: given });
   },
 
-  // ==================== ACTIONS: TRIAL TIMING ====================
+  // ─── ACTIONS: TRIAL TIMING ───
 
-  /**
-   * Start timing for a trial
-   */
+  // Start timing for a trial
   startTrial: (trialId) => {
     const timing = {
       trialId,
@@ -190,9 +194,7 @@ export const useStudyStore = create((set, get) => ({
     }));
   },
 
-  /**
-   * Complete timing for a trial
-   */
+  // Complete timing for a trial
   completeTrial: (trialId) => {
     const now = Date.now();
     
@@ -218,34 +220,36 @@ export const useStudyStore = create((set, get) => ({
     }));
   },
 
-  // ==================== ACTIONS: SAVE TRIAL DATA ====================
+  // ─── ACTIONS: SAVE TRIAL DATA ───
 
   /**
    * Save trial data to Firebase
    */
   saveTrialData: async (trialData) => {
-    const { sessionDocId } = get();
-    if (!sessionDocId) throw new Error('Session not initialized');
+    const prolificId = get().participant?.prolificId;
+    if (!prolificId) throw new Error('Session not initialized');
 
     set({ isSubmitting: true });
 
     try {
       const timing = get().trialTimings.find(t => t.trialId === trialData.trialId);
-      const trialDocId = `${sessionDocId}_${trialData.trialId}`;
+      const trialDocId = `${prolificId}_${trialData.trialId}`;
       let annotationImageUrl = null;
 
       // Store annotation image in Firebase Storage (not Firestore base64)
       if (trialData.annotation?.imageData) {
-        const annotationPath = `annotations/${sessionDocId}/${trialData.trialId}.jpg`;
+        const folder = getChartAssetFolder();
+        const annotationPath = `${folder}/${prolificId}/${trialData.trialId}_drawing.jpg`;
         const annotationRef = ref(storage, annotationPath);
         await uploadString(annotationRef, trialData.annotation.imageData, 'data_url');
         annotationImageUrl = await getDownloadURL(annotationRef);
       }
 
       await setDoc(doc(db, 'trials', trialDocId), {
-        sessionId: sessionDocId,
+        prolificId,
         trialId: trialData.trialId,
         imageIndex: trialData.imageIndex,
+        caption: trialData.caption ?? '',
         
         timing: {
           initTime: timing?.initTime || null,
@@ -282,17 +286,16 @@ export const useStudyStore = create((set, get) => ({
    * Save review data to Firebase
    */
   saveReviewData: async (reviewData) => {
-    const { sessionDocId } = get();
-    if (!sessionDocId) throw new Error('Session not initialized');
+    const prolificId = get().participant?.prolificId;
+    if (!prolificId) throw new Error('Session not initialized');
 
     set({ isSubmitting: true });
 
     try {
-      // Save a single review document for the entire session
-      const reviewDocId = `${sessionDocId}_review`;
+      const reviewDocId = `${prolificId}_review`;
 
       await setDoc(doc(db, 'reviews', reviewDocId), {
-        sessionId: sessionDocId,
+        prolificId,
         trials: reviewData.trials || [],
         responses: reviewData.responses || {},
         rowOrder: reviewData.rowOrder || {},
@@ -308,18 +311,19 @@ export const useStudyStore = create((set, get) => ({
     }
   },
 
-  // ==================== ACTIONS: FINALIZE SESSION ====================
+  // ─── ACTIONS: FINALIZE SESSION ───
 
   /**
    * Finalize session in Firebase
    */
   finalizeSession: async () => {
-    const { sessionDocId, trialTimings } = get();
-    if (!sessionDocId) return;
+    const { trialTimings, participant } = get();
+    const prolificId = participant?.prolificId;
+    if (!prolificId) return;
 
     try {
       const mainTrials = trialTimings.filter((t) => isMainTaskTrialId(t.trialId));
-      await updateDoc(doc(db, 'sessions', sessionDocId), {
+      await updateDoc(doc(db, 'sessions', prolificId), {
         status: 'completed',
         completedAt: serverTimestamp(),
         totalTrials: mainTrials.length,
@@ -332,23 +336,5 @@ export const useStudyStore = create((set, get) => ({
       console.error('Failed to finalize session:', error);
       throw error;
     }
-  },
-
-  // ==================== HELPERS ====================
-
-  /**
-   * Reset store (for testing)
-   */
-  reset: () => {
-    set({
-      participant: null,
-      currentTrialIndex: 0,
-      trialTimings: [],
-      isSubmitting: false,
-      sessionDocId: null,
-      consentGiven: false,
-      assignedSet: null,
-      suneungData: [],
-    });
-  },
+  }
 }));

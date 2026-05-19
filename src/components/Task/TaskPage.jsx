@@ -112,6 +112,7 @@ export default function TaskPage() {
       const trialData = {
         trialId: currentStimulus.id,
         imageIndex: currentStimulus.imageIndex,
+        caption: currentStimulus.caption,
         annotation: canvasData,
         responses,
         drawingActivities: activities,
@@ -164,13 +165,13 @@ export default function TaskPage() {
       <main className="task-content">
         <div className="task-instruction-row">
           <p className="canvas-instruction-main">
-            Read the caption below and draw visual highlights on the chart to help others understand the caption in a clear, friendly way. Then answer the question below the caption.
+            Read the caption below and draw visual highlights on the chart to help others understand the caption in a clear, friendly way.
           </p>
         </div>
 
         <div className="task-main-row">
           <div className="chart-section">
-            <DrawingToolInstructions showDivider />
+            <DrawingToolInstructions />
             <div className="canvas-wrapper">
               <PenToolbar
                 onUndo={() => canvasActionsRef.current?.undo()}

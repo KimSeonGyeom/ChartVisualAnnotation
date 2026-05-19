@@ -25,10 +25,8 @@ const db = getFirestore(app);
 
 // Set definitions
 const sets = [
-  { id: "suneung_set_0", type: "suneung", captionIndex: 0, indices: [2, 3, 4] },
-  { id: "suneung_set_1", type: "suneung", captionIndex: 1, indices: [2, 3, 4] },
-  { id: "suneung_set_2", type: "suneung", captionIndex: 2, indices: [2, 3, 4] },
-  { id: "suneung_set_3", type: "suneung", captionIndex: 3, indices: [2, 3, 4] },
+  { id: "set_0", charts: [1, 2, 3] },
+  { id: "set_1", charts: [2, 3, 4] },
 ];
 
 async function initSets() {
@@ -36,9 +34,7 @@ async function initSets() {
 
   for (const set of sets) {
     await setDoc(doc(db, "sets", set.id), {
-      type: set.type,
-      captionIndex: set.captionIndex,
-      indices: set.indices,
+      charts: set.charts,
     });
     console.log(`  Created: ${set.id}`);
   }

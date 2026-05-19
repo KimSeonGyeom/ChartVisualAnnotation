@@ -37,7 +37,7 @@ async function uploadImageToStorage(
 
 /**
  * Firestore trigger: trial created → Gemini experimental annotation (drawing-guided).
- * Baseline PNGs for pairwise review live under **public/{folder}/baseImages/** on the deployed site (not generated here).
+ * Baseline PNGs for pairwise review: **public/{folder}/baseImages/{chartId}.png** on the deployed site (not generated here).
  */
 export const processTrialAnnotation = onDocumentCreated(
   {
@@ -54,22 +54,35 @@ export const processTrialAnnotation = onDocumentCreated(
     const trialDocId = event.params.trialDocId as string;
     const trialData = snapshot.data();
 
-    const prolificId = trialData.sessionId?.split('_')[0] || 'unknown';
-
-    console.log(`🔄 Starting generation for trial ${trialDocId} (worker: ${prolificId})`);
+    const prolificId =
+      typeof trialData.prolificId === 'string' ? trialData.prolificId.trim() : '';
 
     try {
+      if (!prolificId) {
+        throw new Error('Missing trial.prolificId');
+      }
+
+      console.log(`🔄 Starting generation for trial ${trialDocId} (worker: ${prolificId})`);
+
       await snapshot.ref.update({
         'generation.status': 'processing',
         'generation.startedAt': admin.firestore.FieldValue.serverTimestamp(),
         'generation.prolificId': prolificId,
       });
 
-      const sessionDoc = await db.collection('sessions').doc(trialData.sessionId).get();
+      const sessionDoc = await db.collection('sessions').doc(prolificId).get();
       if (!sessionDoc.exists) {
-        throw new Error(`Session ${trialData.sessionId} not found`);
+        throw new Error(`Session ${prolificId} not found`);
       }
       const sessionData = sessionDoc.data()!;
+
+      const chartAssetFolder =
+        typeof sessionData.chartAssetFolder === 'string'
+          ? sessionData.chartAssetFolder.trim()
+          : '';
+      if (!chartAssetFolder) {
+        throw new Error(`Session ${prolificId} has no chartAssetFolder`);
+      }
 
       const setDoc = await db.collection('sets').doc(sessionData.assignedSetId).get();
       if (!setDoc.exists) {
@@ -78,7 +91,12 @@ export const processTrialAnnotation = onDocumentCreated(
 
       const setData = setDoc.data()!;
       const stimulusIndex = parseInt(trialData.trialId.replace('trial_', '')) - 1;
-      const chartIndex = setData.indices[stimulusIndex];
+      const charts = Array.isArray(setData.charts)
+        ? setData.charts
+        : Array.isArray(setData.indices)
+          ? setData.indices
+          : [];
+      const chartIndex = charts[stimulusIndex];
 
       if (chartIndex === undefined) {
         throw new Error(`Stimulus index ${stimulusIndex} not found in set`);
@@ -105,10 +123,9 @@ export const processTrialAnnotation = onDocumentCreated(
       const { imgExpBase64 } = await generateImgExp(inputData);
 
       const bucket = storage.bucket();
-      const timestamp = Date.now();
       const imgExp = await uploadImageToStorage(
         bucket,
-        `reviews/${prolificId}/${trialDocId}_imgExp_${timestamp}.png`,
+        `${chartAssetFolder}/${prolificId}/${trialData.trialId}_imgExp.png`,
         imgExpBase64
       );
 
@@ -121,36 +138,34 @@ export const processTrialAnnotation = onDocumentCreated(
 
       console.log(`✅ Generated experimental annotation for trial ${trialDocId} (worker: ${prolificId})`);
     } catch (error: any) {
-      console.error(
-        `❌ Generation failed for trial ${trialDocId} (worker: ${prolificId}):`,
-        error.message
-      );
+      console.error(`❌ Generation failed for trial ${trialDocId}:`, error.message);
 
       await snapshot.ref.update({
         'generation.status': 'failed',
         'generation.completedAt': admin.firestore.FieldValue.serverTimestamp(),
         'generation.errorMessage': error.message,
-        'generation.prolificId': prolificId,
+        ...(prolificId ? { 'generation.prolificId': prolificId } : {}),
       });
     }
   }
 );
 
-/** GET /checkGenerationStatus?prolificId=XXX&sessionId=YYY */
+/** GET /checkGenerationStatus?prolificId=XXX */
 export const checkGenerationStatus = onRequest(
   { cors: true },
   async (req, res) => {
-    const { prolificId, sessionId } = req.query;
+    const pid =
+      typeof req.query.prolificId === 'string' ? req.query.prolificId.trim() : '';
 
-    if (!prolificId || !sessionId) {
-      res.status(400).json({ error: 'Missing prolificId or sessionId' });
+    if (!pid) {
+      res.status(400).json({ error: 'Missing prolificId' });
       return;
     }
 
     try {
       const trialsSnapshot = await db
         .collection('trials')
-        .where('sessionId', '==', sessionId)
+        .where('prolificId', '==', pid)
         .get();
 
       const statusMap: Record<string, unknown> = {};
@@ -158,14 +173,13 @@ export const checkGenerationStatus = onRequest(
       trialsSnapshot.forEach((docSnap) => {
         const data = docSnap.data();
         statusMap[data.trialId as string] = {
-          status: data.generation?.status ?? 'pending',
+          status: data.generation?.status,
           imgExp: data.generation?.imgExp,
         };
       });
 
       res.status(200).json({
-        prolificId,
-        sessionId,
+        prolificId: pid,
         trials: statusMap,
       });
     } catch (error: any) {

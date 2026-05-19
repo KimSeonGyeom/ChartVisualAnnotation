@@ -24,7 +24,7 @@
     },
     "penDashPattern": [8, 5],
     "penOptions": {
-      "colors": ["#000000", "#e63946", "#22c55e", "#2563eb"],
+      "colors": ["#000000", "#332288", "#88CCEE", "#DDCC77"],
       "widths": [2]
     }
   }

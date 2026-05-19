@@ -56,9 +56,18 @@
 /* ── 3-column card grid ────────────────────────────────── */
 .review-cards-container {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
   align-items: start;
+}
+
+.review-pair-gate {
+  width: 100%;
+}
+
+.review-pair-gate-inner {
+  border-radius: 8px;
+  border: 1px solid #e5e5e5;
 }
 
 /* ── Individual card ───────────────────────────────────── */

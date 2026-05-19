@@ -2,11 +2,10 @@
  * generate_base_images.mjs
  *
  * Reads public/{CHART_ASSET_FOLDER}/caption.json and generates baseline annotated PNGs
- * Writes to public/{CHART_ASSET_FOLDER}/baseImages/{chartId}_{captionIndex}.png (served as /{folder}/baseImages/...)
+ * Writes to public/{CHART_ASSET_FOLDER}/baseImages/{chartId}.png (one baseline per chart).
  *
  * Caption shapes:
- * - pilot_v3 style: one string per chart → single output per chart (_0).
- * - suneung style: captions[] → one output per array slot (_0 … _{n-1}).
+ * - pilot_v3 style: one string per chart → single output `{chartId}.png`.
  *
  * Usage:
  *   CHART_ASSET_FOLDER=pilot_v3 node onetime_scripts/generate_base_images.mjs
@@ -66,7 +65,7 @@ const IMAGE_DIR = path.join(ROOT, 'public', CHART_ASSET_FOLDER);
 const CAPTION_FILE = path.join(ROOT, 'public', CHART_ASSET_FOLDER, 'caption.json');
 const OUTPUT_DIR = path.join(ROOT, 'public', CHART_ASSET_FOLDER, 'baseImages');
 
-/** pilot_v3: string; suneung: string[] → list of captions for this chart */
+// pilot_v3: string;
 function captionsForEntry(entry) {
   const raw = entry?.captions;
   if (Array.isArray(raw)) return raw.filter((c) => typeof c === 'string' && c.trim());
@@ -74,7 +73,7 @@ function captionsForEntry(entry) {
   return [];
 }
 
-/** Optional filter: CHART_IDS=2,4,6 */
+// Optional filter: CHART_IDS=2,4,6
 function parseChartIdFilter() {
   const raw = process.env.CHART_IDS;
   if (!raw?.trim()) return null;
@@ -88,7 +87,7 @@ function parseChartIdFilter() {
   );
 }
 
-const RETRY_DELAYS_MS = [0, 2000, 5000, 10000, 20000, 30000];
+const RETRY_DELAYS_MS = [0, 2000, 5000];
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -137,12 +136,12 @@ async function main() {
 
   const idFilter = parseChartIdFilter();
 
-  /** @type {typeof captionData} */
+  // @type {typeof captionData}
   const entries = idFilter
     ? captionData.filter((e) => idFilter.has(e.id))
     : captionData.slice();
 
-  const totalJobs = entries.reduce((sum, e) => sum + captionsForEntry(e).length, 0);
+  const totalJobs = entries.length;
 
   if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
@@ -164,33 +163,30 @@ async function main() {
 
     const imageBase64 = fs.readFileSync(imagePath).toString('base64');
     const captionList = captionsForEntry(chartEntry);
-
-    if (captionList.length === 0) {
+    const caption = captionList[0];
+    if (!caption) {
       console.error(`❌ No usable captions for chart id ${chartId}`);
       continue;
     }
 
-    for (let captionIndex = 0; captionIndex < captionList.length; captionIndex++) {
-      const caption = captionList[captionIndex];
-      const outputFilename = `${chartId}_${captionIndex}.png`;
-      const outputPath = path.join(OUTPUT_DIR, outputFilename);
+    const outputFilename = `${chartId}.png`;
+    const outputPath = path.join(OUTPUT_DIR, outputFilename);
 
-      console.log(`\n🖼️  Generating ${outputFilename}`);
-      console.log(`   Caption: "${caption}"`);
+    console.log(`\n🖼️  Generating ${outputFilename}`);
+    console.log(`   Caption: "${caption}"`);
 
-      try {
-        const prompt = buildPrompt(caption);
-        const resultBase64 = await generateWithRetry(ai, prompt, imageBase64);
+    try {
+      const prompt = buildPrompt(caption);
+      const resultBase64 = await generateWithRetry(ai, prompt, imageBase64);
 
-        fs.writeFileSync(outputPath, Buffer.from(resultBase64, 'base64'));
-        console.log(
-          `   ✅ Saved → public/${CHART_ASSET_FOLDER}/baseImages/${outputFilename}`
-        );
-        successCount++;
-      } catch (err) {
-        console.error(`   ❌ Failed: ${err.message}`);
-        failCount++;
-      }
+      fs.writeFileSync(outputPath, Buffer.from(resultBase64, 'base64'));
+      console.log(
+        `   ✅ Saved → public/${CHART_ASSET_FOLDER}/baseImages/${outputFilename}`
+      );
+      successCount++;
+    } catch (err) {
+      console.error(`   ❌ Failed: ${err.message}`);
+      failCount++;
     }
   }
 

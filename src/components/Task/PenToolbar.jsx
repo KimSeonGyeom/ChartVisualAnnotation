@@ -155,34 +155,27 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
 }
 
 /** Instruction copy for these drawing tools + ChartCanvas; same module as PenToolbar. */
-export function DrawingToolInstructions({ showDivider = false }) {
+export function DrawingToolInstructions() {
   return (
     <div className="canvas-instruction">
       <ul className="canvas-instruction-list">
         <li>
-          <strong>Pen:</strong> select Pen in the toolbar, then draw on the chart. Use{' '}
-          <strong>Solid</strong> or <strong>Dashed</strong> next to the pen icon for a solid or dashed stroke.
+          <strong>Pen:</strong> Drag to draw a line. Hold the <strong>Shift</strong> key to make straight lines.
+          Line can be either <strong>Solid</strong> or <strong>Dashed</strong>
         </li>
         <li>
-          <strong>Eraser:</strong> select Eraser and drag over pen strokes or rectangle highlights; overlapping
-          marks are removed.
+          <strong>Rectangle:</strong> Drag on the chart to add a semi-transparent highlight over an area.
         </li>
         <li>
-          <strong>Color:</strong> change the highlight color from the Color menu (used by Pen and Rectangle).
+          <strong>Eraser:</strong> Drag over pen strokes or rectangle highlights; overlapping marks are removed.
         </li>
         <li>
-          <strong>Undo / Clear:</strong> use the buttons at the top left to undo or redo. Click the X to clear
-          all drawings.
+          <strong>Color:</strong> Change the pen and rectangle color.
         </li>
         <li>
-          To make <strong>straight lines</strong>, hold the <strong>Shift</strong> key while drawing with the pen.
-        </li>
-        <li>
-          <strong>Rectangle:</strong> select the rectangle tool, then drag on the chart to add a semi-transparent
-          highlight over an area.
+          <strong>Undo / Clear:</strong> Undo or redo the last action. Click the X to clear all drawings.
         </li>
       </ul>
-      {showDivider ? <hr className="canvas-instruction-divider" /> : null}
     </div>
   );
 }

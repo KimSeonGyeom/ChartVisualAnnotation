@@ -3,7 +3,6 @@ import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../services/firebase';
 import questionsConfig from '../../config/questions.json';
-import { getChartAssetFolder } from '../../stores/useStudyStore';
 import './AdminPage.css';
 
 /** Shown as synthetic "Tutorial" row; hide duplicate trial rows from Firestore. */
@@ -12,35 +11,15 @@ const TUTORIAL_PRACTICE_TRIAL_ID = 'tutorial_practice';
 const ADMIN_PASSWORD = 'AELCVA';
 const ADMIN_SESSION_KEY = 'cva_admin_ok';
 
+/** Only list sessions for this asset folder (current pilot). */
+const ADMIN_CHART_FOLDER = 'pilot_v3';
+
 function readAdminAuthed() {
   try {
     return sessionStorage.getItem(ADMIN_SESSION_KEY) === '1';
   } catch {
     return false;
   }
-}
-
-/** Submitted At (UTC) cohort boundaries for admin tabs */
-const APR_10_2026_UTC_MS = Date.UTC(2026, 3, 10);
-const MAY_2_2026_UTC_MS = Date.UTC(2026, 4, 2);
-
-function trialSubmittedAtMs(trial) {
-  const ts = trial?.submittedAt;
-  if (!ts) return null;
-  if (typeof ts.toDate === 'function') return ts.toDate().getTime();
-  if (typeof ts.seconds === 'number') {
-    return ts.seconds * 1000 + Math.floor((ts.nanoseconds || 0) / 1e6);
-  }
-  return null;
-}
-
-/** @returns {'pilot_v1' | 'v2' | 'v3' | 'undated'} */
-function cohortForTrial(trial) {
-  const ms = trialSubmittedAtMs(trial);
-  if (ms == null) return 'undated';
-  if (ms < APR_10_2026_UTC_MS) return 'pilot_v1';
-  if (ms < MAY_2_2026_UTC_MS) return 'v2';
-  return 'v3';
 }
 
 function isHttpUrl(s) {
@@ -191,7 +170,7 @@ function WorkerDrawingImage({ annotation }) {
   return <p className="admin-empty">No image saved.</p>;
 }
 
-function TutorialDetail({ sessionId, prolificId }) {
+function TutorialDetail({ prolificId }) {
   const [tutorialImageUrl, setTutorialImageUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -199,7 +178,10 @@ function TutorialDetail({ sessionId, prolificId }) {
   useEffect(() => {
     const fetchTutorialImage = async () => {
       try {
-        const storageRef = ref(storage, `tutorials/${sessionId}_tutorial.jpg`);
+        const storageRef = ref(
+          storage,
+          `${ADMIN_CHART_FOLDER}/${prolificId}/tutorial.jpg`
+        );
         const url = await getDownloadURL(storageRef);
         setTutorialImageUrl(url);
       } catch (err) {
@@ -211,7 +193,7 @@ function TutorialDetail({ sessionId, prolificId }) {
     };
 
     fetchTutorialImage();
-  }, [sessionId]);
+  }, [prolificId]);
 
   return (
     <>
@@ -239,7 +221,6 @@ function TutorialDetail({ sessionId, prolificId }) {
         <table className="admin-table">
           <tbody>
             <tr><td className="admin-table-key">Prolific ID</td><td>{prolificId}</td></tr>
-            <tr><td className="admin-table-key">Session</td><td>{sessionId}</td></tr>
             <tr><td className="admin-table-key">Type</td><td>Tutorial Practice</td></tr>
           </tbody>
         </table>
@@ -256,12 +237,11 @@ export default function AdminPage() {
   const [sessions, setSessions] = useState({});
   const [sets, setSets] = useState({});
   const [reviews, setReviews] = useState({});
-  const [suneungData, setSuneungData] = useState([]);
+  const [chartCaptions, setChartCaptions] = useState([]);
   const [loading, setLoading] = useState(readAdminAuthed);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState(null);
   const [groupBy, setGroupBy] = useState('prolificId'); // 'prolificId' or 'time'
-  const [studyCohort, setStudyCohort] = useState('v2');
 
   useEffect(() => {
     if (!authed) {
@@ -297,19 +277,18 @@ export default function AdminPage() {
         const reviewsSnapshot = await getDocs(reviewsQuery);
         const reviewsMap = {};
         reviewsSnapshot.docs.forEach(d => {
-          reviewsMap[d.data().sessionId] = d.data();
+          reviewsMap[d.data().prolificId] = d.data();
         });
 
-        const folder = getChartAssetFolder();
-        const suneungResponse = await fetch(`/${folder}/caption.json`);
-        const suneungJson = await suneungResponse.json();
+        const captionRes = await fetch(`/${ADMIN_CHART_FOLDER}/caption.json`);
+        const captionJson = await captionRes.json();
 
         if (!cancelled) {
           setTrials(trialsData);
           setSessions(sessionsMap);
           setSets(setsMap);
           setReviews(reviewsMap);
-          setSuneungData(suneungJson);
+          setChartCaptions(captionJson);
         }
       } catch (err) {
         if (!cancelled) setError('Failed to load data: ' + err.message);
@@ -329,31 +308,25 @@ export default function AdminPage() {
     [trials]
   );
 
-  const cohortCounts = useMemo(() => {
-    const c = { pilot_v1: 0, v2: 0, v3: 0, undated: 0 };
-    trialsSansTutorial.forEach(t => {
-      c[cohortForTrial(t)] += 1;
-    });
-    return c;
-  }, [trialsSansTutorial]);
-
-  const tabTrials = useMemo(
-    () => trialsSansTutorial.filter(t => cohortForTrial(t) === studyCohort),
-    [trialsSansTutorial, studyCohort]
+  const pilotTrials = useMemo(
+    () =>
+      trialsSansTutorial.filter(
+        (t) => sessions[t.prolificId]?.chartAssetFolder === ADMIN_CHART_FOLDER
+      ),
+    [trialsSansTutorial, sessions]
   );
 
   useEffect(() => {
-    setSelected(sel => {
+    setSelected((sel) => {
       if (!sel) return sel;
-      const filtered = trialsSansTutorial.filter(t => cohortForTrial(t) === studyCohort);
-      const ids = new Set(filtered.map(t => t.id));
-      const sessionIds = new Set(filtered.map(t => t.sessionId));
+      const ids = new Set(pilotTrials.map((t) => t.id));
+      const prolificIds = new Set(pilotTrials.map((t) => t.prolificId));
       if (sel.type === 'tutorial' || sel.type === 'review') {
-        return sessionIds.has(sel.sessionId) ? sel : null;
+        return prolificIds.has(sel.prolificId) ? sel : null;
       }
       return ids.has(sel.id) ? sel : null;
     });
-  }, [studyCohort, trialsSansTutorial]);
+  }, [pilotTrials]);
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
@@ -416,31 +389,29 @@ export default function AdminPage() {
   if (loading) return <div className="admin-loading">Loading...</div>;
   if (error) return <div className="admin-error">{error}</div>;
 
-  // Group trials by prolificId (current cohort tab only)
+  // Group trials by prolificId (pilot_v3 only)
   const groupedTrials = {};
-  tabTrials.forEach(trial => {
-    const session = sessions[trial.sessionId];
-    const prolificId = session?.prolificId || 'unknown';
-    if (!groupedTrials[prolificId]) {
-      groupedTrials[prolificId] = [];
+  pilotTrials.forEach((trial) => {
+    const pid = trial.prolificId;
+    if (!pid) return;
+    const session = sessions[pid];
+    if (!groupedTrials[pid]) {
+      groupedTrials[pid] = [];
     }
-    groupedTrials[prolificId].push({ ...trial, prolificId, session });
+    groupedTrials[pid].push({ ...trial, session });
   });
 
   const sortedProlificIds = Object.keys(groupedTrials).sort();
-
-  const cohortTabs = [
-    { key: 'pilot_v1', label: 'Pilot Study v1', hint: 'before Apr 10, 2026 UTC' },
-    { key: 'v2', label: 'Pilot Study v2', hint: 'Apr 10 – May 1, 2026 UTC' },
-    { key: 'v3', label: 'Pilot Study v3', hint: 'from May 2, 2026 UTC' },
-  ];
 
   return (
     <div className="admin-page">
       <div className="admin-header">
         <h1>Admin Viewer</h1>
+        <p className="admin-cohort-note" style={{ margin: '0.25rem 0 0', fontSize: '0.9rem', color: '#555' }}>
+          Showing sessions with <code>chartAssetFolder === pilot_v3</code> only.
+        </p>
         <div className="admin-header-controls">
-          <span className="admin-count">{tabTrials.length} trials</span>
+          <span className="admin-count">{pilotTrials.length} trials (pilot_v3)</span>
           <select 
             className="admin-group-select"
             value={groupBy}
@@ -455,64 +426,29 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="admin-tabs" role="tablist" aria-label="Study cohort">
-        {cohortTabs.map(({ key, label, hint }) => (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            aria-selected={studyCohort === key}
-            className={`admin-tab ${studyCohort === key ? 'active' : ''}`}
-            onClick={() => setStudyCohort(key)}
-          >
-            <span className="admin-tab-label">{label}</span>
-            <span className="admin-tab-hint">{hint}</span>
-            <span className="admin-tab-count">{cohortCounts[key]}</span>
-          </button>
-        ))}
-        {cohortCounts.undated > 0 && (
-          <button
-            type="button"
-            role="tab"
-            aria-selected={studyCohort === 'undated'}
-            className={`admin-tab ${studyCohort === 'undated' ? 'active' : ''}`}
-            onClick={() => setStudyCohort('undated')}
-          >
-            <span className="admin-tab-label">Undated</span>
-            <span className="admin-tab-hint">no Submitted At</span>
-            <span className="admin-tab-count">{cohortCounts.undated}</span>
-          </button>
-        )}
-      </div>
-
       <div className="admin-layout">
         {/* Left: trial list */}
         <div className="admin-list">
           {groupBy === 'prolificId' ? (
             // Grouped by Prolific ID
-            sortedProlificIds.map(prolificId => {
+            sortedProlificIds.map((prolificId) => {
               const workerTrials = groupedTrials[prolificId];
-              const workerTrialsListed = workerTrials;
-              const sessionId = workerTrials[0]?.sessionId;
-              const review = reviews[sessionId];
-              
+              const review = reviews[prolificId];
+
               return (
                 <div key={prolificId} className="admin-worker-group">
                   <div className="admin-worker-header">
                     <strong>{prolificId}</strong>
                   </div>
-                  {/* Tutorial */}
-                  {sessionId && (
-                    <div
-                      key={`${sessionId}_tutorial`}
-                      className={`admin-list-item ${selected?.id === `${sessionId}_tutorial` ? 'active' : ''}`}
-                      onClick={() => setSelected({ id: `${sessionId}_tutorial`, type: 'tutorial', sessionId, prolificId })}
-                    >
-                      <div className="admin-list-item-id">Tutorial</div>
-                      <div className="admin-list-item-meta">Practice</div>
-                    </div>
-                  )}
-                  {workerTrialsListed.map(trial => (
+                  <div
+                    key={`${prolificId}_tutorial`}
+                    className={`admin-list-item ${selected?.id === `${prolificId}_tutorial` ? 'active' : ''}`}
+                    onClick={() => setSelected({ id: `${prolificId}_tutorial`, type: 'tutorial', prolificId })}
+                  >
+                    <div className="admin-list-item-id">Tutorial</div>
+                    <div className="admin-list-item-meta">Practice</div>
+                  </div>
+                  {workerTrials.map((trial) => (
                     <div
                       key={trial.id}
                       className={`admin-list-item ${selected?.id === trial.id ? 'active' : ''}`}
@@ -531,9 +467,9 @@ export default function AdminPage() {
                   ))}
                   {review && (
                     <div
-                      key={`${sessionId}_review`}
-                      className={`admin-list-item ${selected?.id === `${sessionId}_review` ? 'active' : ''}`}
-                      onClick={() => setSelected({ id: `${sessionId}_review`, type: 'review', sessionId, prolificId, review })}
+                      key={`${prolificId}_review`}
+                      className={`admin-list-item ${selected?.id === `${prolificId}_review` ? 'active' : ''}`}
+                      onClick={() => setSelected({ id: `${prolificId}_review`, type: 'review', prolificId, review })}
                     >
                       <div className="admin-list-item-id">Review</div>
                       <div className="admin-list-item-meta">
@@ -546,17 +482,17 @@ export default function AdminPage() {
             })
           ) : (
             // Sorted by time
-            tabTrials.map(trial => {
-              const session = sessions[trial.sessionId];
-              const prolificId = session?.prolificId || 'unknown';
+            pilotTrials.map((trial) => {
+              const pid = trial.prolificId;
+              const session = pid ? sessions[pid] : null;
               return (
                 <div
                   key={trial.id}
                   className={`admin-list-item ${selected?.id === trial.id ? 'active' : ''}`}
-                  onClick={() => setSelected({ ...trial, prolificId, session })}
+                  onClick={() => setSelected({ ...trial, session })}
                 >
                   <div className="admin-list-item-id">
-                    {prolificId} - {trial.trialId || trial.id}
+                    {pid || '(no id)'} - {trial.trialId || trial.id}
                   </div>
                   <div className="admin-list-item-meta">
                     Image #{trial.imageIndex} &nbsp;·&nbsp;
@@ -575,7 +511,7 @@ export default function AdminPage() {
           {!selected ? (
             <div className="admin-placeholder">← Select a trial, tutorial, or review to view details</div>
           ) : selected.type === 'tutorial' ? (
-            <TutorialDetail sessionId={selected.sessionId} prolificId={selected.prolificId} />
+            <TutorialDetail prolificId={selected.prolificId} />
           ) : selected.type === 'review' ? (
             <>
               <h2 className="admin-detail-title">
@@ -622,7 +558,7 @@ export default function AdminPage() {
                   <div className="admin-gen-image-container">
                     <h4>Original Worker Drawing</h4>
                     <WorkerDrawingImage
-                      key={`${selected.sessionId}_${selected.trialId}`}
+                      key={`${selected.prolificId}_${selected.trialId}`}
                       annotation={selected.annotation}
                     />
                   </div>
@@ -660,14 +596,14 @@ export default function AdminPage() {
                     )}
                     <div className="admin-details-text-panel">
                     {(() => {
-                      const setId = selected.session?.assignedSetId;
                       const imageIndex = selected.imageIndex;
-                      const setData = sets[setId];
-                      const captionIdx = setData?.captionIndex ?? 0;
-                      const chart = suneungData.find(c => c.id === imageIndex);
-                      const caption = chart?.captions?.[captionIdx] || 'No caption available';
+                      const chart = chartCaptions.find((c) => c.id === imageIndex);
+                      const captionText =
+                        typeof chart?.captions === 'string' && chart.captions.trim()
+                          ? chart.captions.trim()
+                          : 'No caption available';
                       const details = {
-                        caption,
+                        caption: captionText,
                         ...(selected.responses || {})
                       };
                       return Object.keys(details).length > 0 ? (
@@ -707,11 +643,11 @@ export default function AdminPage() {
               <section className="admin-section">
                 <h3>Participant review (this trial)</h3>
                 <p className="admin-section-hint">
-                  Review task keys use <code>v_exp</code> (Gemini experimental) and <code>v_base</code>{' '}
-                  (static baseline).
+                  Columns: <code>v_exp</code> (Gemini) vs <code>v_base</code> (baseline). Rows follow{' '}
+                  <code>questions.json</code> (each Likert + its <code>*_reason</code> text).
                 </p>
                 <TrialGenerationReviewAnswers
-                  review={reviews[selected.sessionId]}
+                  review={reviews[selected.prolificId]}
                   trialId={selected.trialId}
                 />
               </section>
@@ -722,7 +658,6 @@ export default function AdminPage() {
                 <table className="admin-table">
                   <tbody>
                     <tr><td className="admin-table-key">Prolific ID</td><td>{selected.prolificId}</td></tr>
-                    <tr><td className="admin-table-key">Session</td><td>{selected.sessionId}</td></tr>
                     <tr><td className="admin-table-key">Image Index</td><td>{selected.imageIndex}</td></tr>
                     <tr><td className="admin-table-key">Stroke Count</td><td>{selected.strokeCount ?? '—'}</td></tr>
                     <tr><td className="admin-table-key">Duration</td><td>{selected.timing?.durationMs ? `${(selected.timing.durationMs / 1000).toFixed(1)}s` : '—'}</td></tr>

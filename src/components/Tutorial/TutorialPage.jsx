@@ -5,15 +5,14 @@ import PenToolbar, { DrawingToolInstructions } from '../Task/PenToolbar';
 import studyConfig from '../../config/study.json';
 import { useDrawingStore } from '../../stores/useDrawingStore';
 import { useStudyStore, getChartAssetFolder } from '../../stores/useStudyStore';
+import { ref, uploadString } from 'firebase/storage';
+import { storage } from '../../services/firebase';
 import '../Task/TaskPage.css';
 import './TutorialPage.css';
 
-const TUTORIAL_CAPTION =
-  'The percentage of people in the 18-29 group who said they had read a print book was 74%, which was the highest among the four groups.';
-
 const chartFolder = getChartAssetFolder();
 /** Practice canvas uses the dedicated tutorial chart asset (not a numbered task chart). */
-const PRACTICE_CHART_URL = `/${chartFolder}/tutorial_example.png`;
+const PRACTICE_CHART_URL = `/${chartFolder}/tutorial_base.png`;
 
 const TUTORIAL_TRIAL_ID = 'tutorial_practice';
 
@@ -29,7 +28,7 @@ export default function TutorialPage() {
   }));
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const { initializeFromConfig, startNewTrial, getStats, getActivities } = useDrawingStore();
+  const { initializeFromConfig, startNewTrial } = useDrawingStore();
 
   useEffect(() => {
     initializeFromConfig(studyConfig);
@@ -45,12 +44,10 @@ export default function TutorialPage() {
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
-      const nw = img.naturalWidth;
-      const nh = img.naturalHeight;
-      if (!nw || !nh) return;
-      const w = PRACTICE_DISPLAY_MAX_W;
-      const h = Math.round((nh / nw) * w);
-      setPracticeCanvasSize({ width: w, height: h });
+      setPracticeCanvasSize({ 
+        width: PRACTICE_DISPLAY_MAX_W, 
+        height: Math.round((img.naturalHeight / img.naturalWidth) * PRACTICE_DISPLAY_MAX_W) 
+      });
     };
     img.src = PRACTICE_CHART_URL;
   }, []);
@@ -61,9 +58,10 @@ export default function TutorialPage() {
 
   const handleStartTask = async () => {
     setSaveError('');
-    const { sessionDocId, completeTrial } = useStudyStore.getState();
+    const { completeTrial, participant } = useStudyStore.getState();
+    const prolificId = participant?.prolificId;
 
-    if (!sessionDocId) {
+    if (!prolificId) {
       navigate('/task');
       return;
     }
@@ -71,15 +69,19 @@ export default function TutorialPage() {
     setIsSaving(true);
     try {
       completeTrial(TUTORIAL_TRIAL_ID);
-      
-      // Save tutorial image to Storage only (not Firestore)
+
       const canvasData = canvasActionsRef.current?.export();
       if (canvasData?.imageData) {
-        const storageRef = ref(storage, `tutorials/${sessionDocId}_tutorial.jpg`);
+        if (!prolificId) {
+          setSaveError('Missing participant id. Please refresh and try again.');
+          return;
+        }
+        const folder = getChartAssetFolder();
+        const storageRef = ref(storage, `${folder}/${prolificId}/tutorial.jpg`);
         await uploadString(storageRef, canvasData.imageData, 'data_url');
         console.log('Tutorial image saved to Storage');
       }
-      
+
       navigate('/task');
     } catch (err) {
       console.error('Failed to save tutorial practice:', err);
@@ -133,21 +135,15 @@ export default function TutorialPage() {
           <div className="tutorial-caption-panel">
             <h2 className="tutorial-section-label">Caption</h2>
             <p className="caption-paragraph">
-              <span className="caption-sentence caption-sentence--highlight">{TUTORIAL_CAPTION}</span>
+              <span className="caption-sentence caption-sentence--highlight">The percentage of people in the 18-29 group who said they had read a print book was 74%, which was the highest among the four groups.</span>
             </p>
           </div>
         </div>
-
         <p className="tutorial-desc">
-          Your goal is to draw <strong>visual highlights</strong> on the <strong>chart</strong> to help others understand the caption in a clear way.
+          Your goal is to draw <strong>visual highlights</strong> on the <strong>chart</strong> to help others understand the caption in a more friendly and clear way.
           <br />
-          The goal can usually be described as: "[Description of your drawing] helps others to [Impact of your drawing]."
-          <br />
-          For example, "A combination of a horizontal line, number, and downward arrows makes it noticeable and easier to understand how much the other groups are lower than the 18-29 group."
-        </p>
-
-        <p className="tutorial-desc">
           Please refer to the <strong>Drawing Tool Instructions</strong> above to understand how to use the tools to draw visual highlights.
+          <br />
           <strong>TODO:</strong> To show that you have understood how to use the tools to draw visual highlights, draw the visual highlights on the left chart in the same way as the example on the right.
         </p>
 

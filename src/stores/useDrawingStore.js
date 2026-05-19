@@ -178,17 +178,5 @@ export const useDrawingStore = create((set, get) => ({
       totalPathLength,
       trialDurationMs: trialStartTime ? Date.now() - trialStartTime : 0,
     };
-  },
-
-  reset: () => {
-    set({
-      activeTool: 'pen',
-      penLineStyle: 'solid',
-      penDashPattern: [8, 5],
-      config: { color: '#000000', width: 3 },
-      allowCustomization: true,
-      activities: [],
-      trialStartTime: null,
-    });
-  },
+  }
 }));

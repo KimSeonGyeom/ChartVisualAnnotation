@@ -22,16 +22,32 @@
       {
         "id": "understanding",
         "type": "likert",
-        "question": "This annotation helps readers understand the caption.",
+        "question": "This annotation helps readers understand the caption more easily.",
         "scale": 7,
         "labels": ["Strongly Disagree", "", "", "Neutral", "", "", "Strongly Agree"],
         "required": true
       },
       {
-        "id": "reason",
+        "id": "understanding_reason",
         "type": "text",
-        "question": "Please provide brief reasons for your score.",
-        "placeholder": "Explain your rating...",
+        "question": "Please briefly explain your rating for the previous statement.",
+        "placeholder": "Your explanation...",
+        "required": true,
+        "maxLength": 500
+      },
+      {
+        "id": "visual_quality",
+        "type": "likert",
+        "question": "The annotation is visually polished and complete.",
+        "scale": 7,
+        "labels": ["Strongly Disagree", "", "", "Neutral", "", "", "Strongly Agree"],
+        "required": true
+      },
+      {
+        "id": "visual_quality_reason",
+        "type": "text",
+        "question": "",
+        "placeholder": "Please briefly explain your rating for the previous statement....",
         "required": true,
         "maxLength": 500
       }

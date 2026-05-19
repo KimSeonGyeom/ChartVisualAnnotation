@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useStudyStore, getChartAssetFolder } from '../../stores/useStudyStore';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
+import questionsConfig from '../../config/questions.json';
 import './ReviewPage.css';
 
-const LIKERT_QUESTION = 'This annotation helps readers understand the caption more easily.';
-const REASON_QUESTION = 'Please provide brief reasons for your score.';
-const LIKERT_SCALE = 7;
+const REVIEW_CONFIG = questionsConfig.review;
+/** Ordered likert + text pairs (Firestore keys: trialId_v_exp_understanding, …_understanding_reason, …). */
+const REVIEW_FIELDS = REVIEW_CONFIG?.questions || [];
+const DEFAULT_LIKERT_SCALE =
+  REVIEW_FIELDS.find((q) => q.type === 'likert')?.scale ?? 7;
 const DISPLAY_LABELS = ['A', 'B'];
 /** Review columns: Gemini experimental vs static baseline PNG; order is randomized per stimulus. */
 const REVIEW_VARIANTS = ['v_exp', 'v_base'];
@@ -21,6 +24,12 @@ function shuffleArray(arr) {
   return a;
 }
 
+function hasGenerationResult(stimulusId, generationStatus, imgExpUrls) {
+  const st = generationStatus[stimulusId];
+  const url = imgExpUrls[stimulusId];
+  return st === 'completed' && typeof url === 'string' && url.trim().length > 0;
+}
+
 export default function ReviewPage() {
   const navigate = useNavigate();
 
@@ -32,7 +41,8 @@ export default function ReviewPage() {
   const [imgExpUrls, setImageExpUrls] = useState({});
   const [imageOrder, setImageOrder] = useState({});
 
-  const { participant, assignedSet, getSetStimuli, saveReviewData, sessionDocId } = useStudyStore();
+  const { participant, assignedSet, getSetStimuli, saveReviewData } = useStudyStore();
+  const prolificId = participant?.prolificId;
   const stimuli = getSetStimuli();
 
   useEffect(() => {
@@ -52,14 +62,14 @@ export default function ReviewPage() {
   }, [participant, assignedSet, stimuli, navigate]);
 
   useEffect(() => {
-    if (!sessionDocId || stimuli.length === 0) return;
+    if (!prolificId || stimuli.length === 0) return;
     let intervalId = null;
 
     const checkGenerationStatus = async () => {
       let allCompleted = true;
 
       for (const stimulus of stimuli) {
-        const trialDocId = `${sessionDocId}_${stimulus.id}`;
+        const trialDocId = `${prolificId}_${stimulus.id}`;
         try {
           const docSnap = await getDoc(doc(db, 'trials', trialDocId));
           if (docSnap.exists()) {
@@ -90,30 +100,31 @@ export default function ReviewPage() {
     checkGenerationStatus();
     intervalId = setInterval(checkGenerationStatus, 5000);
     return () => { if (intervalId) clearInterval(intervalId); };
-  }, [sessionDocId, stimuli]);
+  }, [prolificId, stimuli]);
 
   const getImageUrl = (stimulus, versionKey) => {
     if (versionKey === 'v_exp') return imgExpUrls[stimulus.id];
     if (versionKey === 'v_base') {
       const folder = getChartAssetFolder();
-      return `/${folder}/baseImages/${stimulus.imageIndex}_${stimulus.captionIndex}.png`;
+      return `/${folder}/baseImages/${stimulus.imageIndex}.png`;
     }
     return '';
   };
 
-  const setResponse = (stimulusId, versionKey, field, value) => {
-    const key = `${stimulusId}_${versionKey}_${field}`;
-    setResponses(prev => ({ ...prev, [key]: value }));
-    setErrors(prev => ({ ...prev, [key]: null }));
+  const setResponse = (stimulusId, versionKey, fieldId, value) => {
+    const key = `${stimulusId}_${versionKey}_${fieldId}`;
+    setResponses((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => ({ ...prev, [key]: null }));
   };
 
   const validateSubmission = () => {
-    const stillGenerating = stimuli.some(s => {
-      const status = generationStatus[s.id];
-      return status === 'processing' || status === 'pending' || !status;
+    const blocked = stimuli.some((s) => {
+      const st = generationStatus[s.id];
+      if (st === 'failed') return true;
+      return !hasGenerationResult(s.id, generationStatus, imgExpUrls);
     });
 
-    if (stillGenerating) {
+    if (blocked) {
       setError('Please wait for all annotations to finish generating before submitting.');
       return false;
     }
@@ -122,10 +133,17 @@ export default function ReviewPage() {
 
     stimuli.forEach((stimulus) => {
       REVIEW_VARIANTS.forEach((v) => {
-        const likertKey = `${stimulus.id}_${v}_understanding`;
-        const reasonKey = `${stimulus.id}_${v}_reason`;
-        if (!responses[likertKey]) newErrors[likertKey] = 'Required';
-        if (!responses[reasonKey]?.trim()) newErrors[reasonKey] = 'Required';
+        REVIEW_FIELDS.forEach((q) => {
+          if (q.required === false) return;
+          const k = `${stimulus.id}_${v}_${q.id}`;
+          if (q.type === 'likert') {
+            if (responses[k] === undefined || responses[k] === null || responses[k] === '') {
+              newErrors[k] = 'Required';
+            }
+          } else if (q.type === 'text') {
+            if (!String(responses[k] ?? '').trim()) newErrors[k] = 'Required';
+          }
+        });
       });
     });
 
@@ -159,10 +177,13 @@ export default function ReviewPage() {
     return <div className="review-page"><div className="loading">Loading...</div></div>;
   }
 
-  const isAnyGenerating = stimuli.some(s => {
-    const status = generationStatus[s.id];
-    return status === 'processing' || status === 'pending' || !status;
+  const reviewBlocked = stimuli.some((s) => {
+    const st = generationStatus[s.id];
+    if (st === 'failed') return true;
+    return !hasGenerationResult(s.id, generationStatus, imgExpUrls);
   });
+
+  const anyGenFailed = stimuli.some((s) => generationStatus[s.id] === 'failed');
 
   return (
     <div className="review-page">
@@ -176,8 +197,8 @@ export default function ReviewPage() {
       <main className="review-content">
         {stimuli.map((stimulus) => {
           const status = generationStatus[stimulus.id];
-          const isGenerating = status === 'processing' || status === 'pending' || !status;
           const order = imageOrder[stimulus.id] || [...REVIEW_VARIANTS];
+          const ready = hasGenerationResult(stimulus.id, generationStatus, imgExpUrls);
 
           return (
             <div key={stimulus.id} className="review-trial-section">
@@ -187,30 +208,31 @@ export default function ReviewPage() {
                 </p>
               </div>
 
-              {/* ── Per-image questions ── */}
+              {!ready ? (
+                <div className="review-pair-gate">
+                  {status === 'failed' ? (
+                    <div className="generation-error review-pair-gate-inner">
+                      <p>
+                        ⚠️ Generation failed for this chart. Please wait or refresh; both images will appear when generation succeeds.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="generation-loading review-pair-gate-inner">
+                      <div className="spinner" />
+                      <p>Generating annotation… Both images will appear when ready.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
               <div className="review-cards-container">
                 {order.map((versionKey, idx) => {
                   const label = DISPLAY_LABELS[idx];
-                  const isExp = versionKey === 'v_exp';
-                  const cardGenerating = isExp && isGenerating;
                   const imageUrl = getImageUrl(stimulus, versionKey);
-                  const likertKey = `${stimulus.id}_${versionKey}_understanding`;
-                  const reasonKey = `${stimulus.id}_${versionKey}_reason`;
 
                   return (
-                    <div key={versionKey} className={`review-card ${cardGenerating ? 'review-card-loading' : ''}`}>
-                      {/* Image */}
+                    <div key={versionKey} className="review-card">
                       <div className="review-card-image">
-                        {cardGenerating ? (
-                          <div className="generation-loading">
-                            <div className="spinner"></div>
-                            <p>Generating annotation...</p>
-                          </div>
-                        ) : status === 'failed' && isExp ? (
-                          <div className="generation-error">
-                            <p>⚠️ Generation failed. Please wait for 1 minute. Image will be generated again.</p>
-                          </div>
-                        ) : imageUrl ? (
+                        {imageUrl ? (
                           <img
                             src={imageUrl}
                             alt={`Annotated chart Image ${label}`}
@@ -219,58 +241,83 @@ export default function ReviewPage() {
                         ) : null}
                       </div>
 
-                      {/* 7-point Likert */}
-                      <div className={`review-card-question ${errors[likertKey] ? 'has-error' : ''}`}>
-                        <label className="review-question-label">{LIKERT_QUESTION}</label>
-                        <div className="review-likert-7-options">
-                          {Array.from({ length: LIKERT_SCALE }, (_, i) => i + 1).map(val => (
-                            <label key={val} className="review-likert-7-option">
-                              <span className="review-likert-num">{val}</span>
-                              <input
-                                type="radio"
-                                name={likertKey}
-                                value={val}
-                                checked={responses[likertKey] === val}
-                                onChange={() => setResponse(stimulus.id, versionKey, 'understanding', val)}
-                                disabled={isSubmitting || cardGenerating}
+                      {REVIEW_FIELDS.map((q) => {
+                        const fieldKey = `${stimulus.id}_${versionKey}_${q.id}`;
+                        if (q.type === 'likert') {
+                          const scale = q.scale ?? DEFAULT_LIKERT_SCALE;
+                          return (
+                            <div
+                              key={q.id}
+                              className={`review-card-question ${errors[fieldKey] ? 'has-error' : ''}`}
+                            >
+                              <label className="review-question-label">{q.question}</label>
+                              <div className="review-likert-7-options">
+                                {Array.from({ length: scale }, (_, i) => i + 1).map((val) => (
+                                  <label key={val} className="review-likert-7-option">
+                                    <span className="review-likert-num">{val}</span>
+                                    <input
+                                      type="radio"
+                                      name={fieldKey}
+                                      value={val}
+                                      checked={responses[fieldKey] === val}
+                                      onChange={() => setResponse(stimulus.id, versionKey, q.id, val)}
+                                      disabled={isSubmitting}
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+                              <div className="review-likert-7-labels">
+                                <span>Strongly Disagree</span>
+                                <span>Neutral</span>
+                                <span>Strongly Agree</span>
+                              </div>
+                              {errors[fieldKey] && (
+                                <span className="review-error-text">{errors[fieldKey]}</span>
+                              )}
+                            </div>
+                          );
+                        }
+                        if (q.type === 'text') {
+                          return (
+                            <div
+                              key={q.id}
+                              className={`review-card-question ${errors[fieldKey] ? 'has-error' : ''}`}
+                            >
+                              <label className="review-question-label">{q.question}</label>
+                              <textarea
+                                className="review-text-input"
+                                value={responses[fieldKey] || ''}
+                                onChange={(e) => setResponse(stimulus.id, versionKey, q.id, e.target.value)}
+                                placeholder={q.placeholder || ''}
+                                maxLength={q.maxLength ?? 500}
+                                disabled={isSubmitting}
+                                rows={3}
                               />
-                            </label>
-                          ))}
-                        </div>
-                        <div className="review-likert-7-labels">
-                          <span>Strongly Disagree</span>
-                          <span>Neutral</span>
-                          <span>Strongly Agree</span>
-                        </div>
-                        {errors[likertKey] && <span className="review-error-text">{errors[likertKey]}</span>}
-                      </div>
-
-                      {/* Text reason */}
-                      <div className={`review-card-question ${errors[reasonKey] ? 'has-error' : ''}`}>
-                        <label className="review-question-label">{REASON_QUESTION}</label>
-                        <textarea
-                          className="review-text-input"
-                          value={responses[reasonKey] || ''}
-                          onChange={e => setResponse(stimulus.id, versionKey, 'reason', e.target.value)}
-                          placeholder="Briefly explain your rating..."
-                          maxLength={500}
-                          disabled={isSubmitting || cardGenerating}
-                          rows={3}
-                        />
-                        {errors[reasonKey] && <span className="review-error-text">{errors[reasonKey]}</span>}
-                      </div>
+                              {errors[fieldKey] && (
+                                <span className="review-error-text">{errors[fieldKey]}</span>
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
                     </div>
                   );
                 })}
               </div>
+              )}
             </div>
           );
         })}
 
-        {isAnyGenerating && (
+        {reviewBlocked && (
           <div className="review-status-banner">
-            <div className="spinner-small"></div>
-            <span>Generating annotations... Please wait before submitting.</span>
+            {!anyGenFailed && <div className="spinner-small"></div>}
+            <span>
+              {anyGenFailed
+                ? 'Some charts could not be generated. Please refresh the page or contact the researcher; submit stays disabled until all charts are ready.'
+                : 'Waiting for generated images… Please wait before submitting.'}
+            </span>
           </div>
         )}
 
@@ -279,7 +326,7 @@ export default function ReviewPage() {
         <button
           className="review-submit-btn"
           onClick={handleSubmit}
-          disabled={isSubmitting || isAnyGenerating}
+          disabled={isSubmitting || reviewBlocked}
         >
           {isSubmitting ? 'Saving...' : 'Submit Review'}
         </button>
