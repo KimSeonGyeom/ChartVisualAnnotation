@@ -41,22 +41,30 @@ if (!API_KEY) {
 // ─── Prompt (edit this section) ───────────────────────────────────────────────
 function buildPrompt(caption) {
   return `
+**Information:**
 Caption: ${caption}
 
+You will receive one image:
+- **Original chart:** the base chart with no annotations. This is the fixed chart layer.
+
 **Task:**
-Annotate the given chart based on the caption.
-When annotating the chart, please strictly follow all the guidelines below.
+1. Analyze the caption together with the original chart. Identify both:
+   - **What to express** — which data, regions, trends, comparisons, or relationships the caption emphasizes and that are supported by the chart.
+   - **How to express it** — suitable visual emphasis (e.g. emphasis, grouping, direction, contrast) that connects the chart to the caption.
+2. Draw visual annotations on top of the original chart based on the identified "What" and "How" in step 1.
+
+When drawing the annotations, strictly follow all guidelines below.
 
 **Guidelines:**
-1. **No Invented Statistics:** Use only the numerical values explicitly provided in the caption or visible in the chart. Do not calculate, derive, estimate, round, convert units, compare ratios, infer rankings, or create any new numbers that are not directly stated.
+1. Use the original chart as the exact base image. Preserve the same pixel dimensions, aspect ratio, axes, labels, legends, and data marks. Only add annotations on top.
 
-2. **Avoid Clutter and Redundancy:** Each annotation must be distinct. Avoid placing multiple labels that convey the same data point or insight to keep the visual clean. Make the chart easier to read, not busier. Use visual emphasis selectively and ensure annotations do not obscure important data.
+2. Use the caption and the chart for ideation of both what to annotate and how to annotate it. Choose emphasis that reflects the caption's message and what is feasible and appropriate in the chart.
 
-3. **Improve the Visual Appearance:** Do not preserve the input drawing exactly as-is. Refine the appearance by improving styling, alignment, spacing, hierarchy, and visual polish while keeping the original chart content and meaning.
+3. Avoid clutter and redundancy. Each annotation should be concise, distinct and legible.
 
-4. **No Text-Only Annotations:** Do not add annotations that consist only of plain text. Every text-based annotation must include a graphical cue that clearly connects the texts to the relevant part of the chart.
+4. Use short, essential keywords or values for text annotations. Do not use full sentences or copy the caption.
 
-5. **Explore Creative Styles:** Visual annotations should explore creative visual styles while preserving the key insight. Prioritize expressive communication, and novel visual perspective even though the original chart follows a simple, basic and plain design.
+5. Style visual annotations with expressive, polished styles for the highlight layer only. Leave the original chart as is.
 `;
 }
 
@@ -104,7 +112,13 @@ async function generateWithRetry(ai, prompt, imageBase64) {
         model: 'gemini-3.1-flash-image-preview',
         contents: [
           { text: prompt },
-          { inlineData: { data: imageBase64, mimeType: 'image/png' } },
+          { text: 'Original chart:' },
+          {
+            inlineData: {
+              data: imageBase64,
+              mimeType: 'image/png',
+            },
+          },
         ],
         config: { responseModalities: ['IMAGE'] },
       });
@@ -169,7 +183,7 @@ async function main() {
       continue;
     }
 
-    const outputFilename = `${chartId}.png`;
+    const outputFilename = `${chartId}_2.png`;
     const outputPath = path.join(OUTPUT_DIR, outputFilename);
 
     console.log(`\n🖼️  Generating ${outputFilename}`);
