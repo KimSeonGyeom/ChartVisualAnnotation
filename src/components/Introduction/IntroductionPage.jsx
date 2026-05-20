@@ -103,7 +103,7 @@ export default function IntroductionPage() {
                   Complete a <strong>tutorial</strong> on how to use the canvas tools to draw visual highlights
                 </li>
                 <li>View a chart image with a caption and draw visual highlights on the chart</li>
-                <li>Repeat for 3 chart-caption pairs</li>
+                <li>Repeat for 5 chart-caption pairs</li>
                 <li>Review and evaluate generated visual annotations for each chart</li>
               </ol>
             </div>

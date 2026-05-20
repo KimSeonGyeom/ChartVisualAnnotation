@@ -40,25 +40,23 @@ You will receive two images in order:
 - **Image 2 — Participant drawing:** the same chart with the participant's rough visual highlights on top.
 
 **Task:**
-1. Compare Image 1 and Image 2. From the participant's marks, identify both:
+1. Compare Image 1 and Image 2. From the participant's drawing, identify both:
    - **What they are trying to express** — which data, regions, trends, comparisons, or relationships their highlights target, and how that connects to the caption.
    - **How they are trying to express it** — the communicative role of their marks (emphasis, grouping, direction, contrast, etc.).
-2. Produce a single output image: the **original chart from Image 1** with refined visual annotations that reflect the participant's message and how they visually emphasized it, aligned with the caption.
+2. Draw visual annotation on top of Image 1 based on the identified "What" and "How" in step 1.
 
-When producing the output, strictly follow all guidelines below.
+When drawing the annotations, strictly follow all guidelines below.
 
 **Guidelines:**
-1. Use Image 1 as the exact base image. Do not resize, crop, restyle, recolor, or move any part of the original chart. Preserve the same pixel dimensions, aspect ratio, axes, labels, legends, and data marks. Only add annotations on top.
+1. Use Image 1 as the exact base image. Preserve the same pixel dimensions, aspect ratio, axes, labels, legends, and data marks. Only add annotations on top.
 
-2. Use participant's drawing(Image 2) as the guide for both what to annotate and how to annotate it. Carefully reflect what the participant highlighted and how they emphasized it. Refine appearance; do not trace Image 2 literally.
+2. Use participant's drawing(Image 2) as the guide for both what to annotate and how to annotate it. Figure out what the participant highlighted and how they visually emphasized it. Refine the drawn annotations added in Image 2 without tracing them exactly.
 
-3. Do not invent statistics. Do not add any new numeric labels, percentages, values, rankings, or quantitative claims unless they already appear verbatim in Image 1 or the caption.
+3. Avoid clutter and redundancy. Each annotation should be concise, distinct and legible.
 
-4. Avoid clutter and redundancy. Each annotation should be concise and distinct. Use visual emphasis selectively and ensure annotations do not obscure important data.
+4. Use short, essential keywords or values for text annotations. Do not use full sentences or copy the caption.
 
-5. Keep text annotations concise. Use short, essential keywords or values. Do not use full sentences or copy the caption.
-
-6. Style visual annotations with expressive, polished styles for the highlight layer only. Leave the chart base(Image 1) as is.
+5. Style visual annotations with expressive, polished styles for the highlight layer only. Leave the chart base(Image 1) as is.
 `;
 }
 

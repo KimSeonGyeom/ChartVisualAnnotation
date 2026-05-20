@@ -1,12 +1,65 @@
 import { create } from 'zustand';
-import { 
-  doc, setDoc, updateDoc, getDoc, runTransaction, serverTimestamp 
+import {
+  doc,
+  setDoc,
+  updateDoc,
+  runTransaction,
+  serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../services/firebase';
 import studyConfig from '../config/study.json';
 
-const NUM_SETS = 2; // Firestore `sets` collection: set_0, set_1 only
+const NUM_SETS = 9; // Firestore `sets`: set_0 … set_8, each with 5 chart ids (1–9, sliding window)
+const SET_SLOTS_DOC_ID = 'set_slots';
+const SLOT_TIMEOUT_MS = 90 * 60 * 1000;
+
+/** Firestore slot status values (UI labels: Not Assigned / In Progress / Done). */
+export const SET_SLOT_STATUS = {
+  NOT_ASSIGNED: 'not_assigned',
+  IN_PROGRESS: 'in_progress',
+  DONE: 'done',
+};
+
+export const SET_SLOT_STATUS_LABEL = {
+  [SET_SLOT_STATUS.NOT_ASSIGNED]: 'Not Assigned',
+  [SET_SLOT_STATUS.IN_PROGRESS]: 'In Progress',
+  [SET_SLOT_STATUS.DONE]: 'Done',
+};
+
+function slotAssignedAtMs(slot) {
+  const at = slot?.assignedAt;
+  if (!at) return null;
+  if (typeof at.toMillis === 'function') return at.toMillis();
+  if (typeof at === 'number') return at;
+  return null;
+}
+
+function isSlotAssignable(slot, nowMs) {
+  if (slot.status === SET_SLOT_STATUS.DONE) return false;
+  if (slot.status === SET_SLOT_STATUS.NOT_ASSIGNED) return true;
+  if (slot.status === SET_SLOT_STATUS.IN_PROGRESS) {
+    const assignedMs = slotAssignedAtMs(slot);
+    if (assignedMs == null) return true;
+    return nowMs - assignedMs >= SLOT_TIMEOUT_MS;
+  }
+  return false;
+}
+
+function normalizeSlotsArray(rawSlots) {
+  if (!Array.isArray(rawSlots) || rawSlots.length !== NUM_SETS) {
+    throw new Error(
+      `config/${SET_SLOTS_DOC_ID} must have a "slots" array of length ${NUM_SETS}. Run onetime_scripts/init_firebase_sets.js.`
+    );
+  }
+  return rawSlots.map((slot, index) => ({
+    setId: typeof slot.setId === 'string' ? slot.setId : `set_${index}`,
+    status: slot.status || SET_SLOT_STATUS.NOT_ASSIGNED,
+    prolificId: slot.prolificId ?? null,
+    assignedAt: slot.assignedAt ?? null,
+  }));
+}
 
 // Required; no fallback — avoids loading charts from the wrong folder.
 export function getChartAssetFolder() {
@@ -77,29 +130,63 @@ export const useStudyStore = create((set, get) => ({
     }
   },
 
-  // Assign a set using a global counter (cycles set_0 ↔ set_1)
+  // Claim first available set slot (not_assigned, or in_progress past 90 min timeout).
   assignSet: async (prolificId) => {
-    try {
-      const counterRef = doc(db, 'config', 'assignment_counter');
-      let setData;
+    const pid = typeof prolificId === 'string' ? prolificId.trim() : '';
+    if (!pid) {
+      throw new Error('Prolific ID is required for set assignment');
+    }
 
-      // Atomically increment counter and determine which set to assign
+    try {
+      const slotsRef = doc(db, 'config', SET_SLOTS_DOC_ID);
+      let setData;
+      let assignedSetIndex = -1;
+
       await runTransaction(db, async (transaction) => {
-        const counterSnap = await transaction.get(counterRef);
-        const currentCount = counterSnap.exists() ? counterSnap.data().count : 0;
-        const setIndex = currentCount % NUM_SETS;
-        const setId = `set_${setIndex}`;
+        const slotsSnap = await transaction.get(slotsRef);
+        if (!slotsSnap.exists()) {
+          throw new Error(
+            `config/${SET_SLOTS_DOC_ID} not found. Run onetime_scripts/init_firebase_sets.js.`
+          );
+        }
+
+        const nowMs = Date.now();
+        const slots = normalizeSlotsArray(slotsSnap.data().slots);
+        let pickIndex = -1;
+
+        for (let i = 0; i < slots.length; i += 1) {
+          if (isSlotAssignable(slots[i], nowMs)) {
+            pickIndex = i;
+            break;
+          }
+        }
+
+        if (pickIndex < 0) {
+          throw new Error('No available sets');
+        }
+
+        const setId = slots[pickIndex].setId;
         const setSnap = await transaction.get(doc(db, 'sets', setId));
         if (!setSnap.exists()) {
           throw new Error(`Set ${setId} not found in Firestore`);
         }
 
-        setData = normalizeAssignedSetDocument(setId, setSnap.data());
+        const nextSlots = slots.map((slot, i) => {
+          if (i !== pickIndex) return slot;
+          return {
+            setId: slot.setId,
+            status: SET_SLOT_STATUS.IN_PROGRESS,
+            prolificId: pid,
+            assignedAt: Timestamp.fromMillis(nowMs),
+          };
+        });
 
-        transaction.set(counterRef, { count: currentCount + 1 }, { merge: true });
+        setData = normalizeAssignedSetDocument(setId, setSnap.data());
+        assignedSetIndex = pickIndex;
+        transaction.set(slotsRef, { slots: nextSlots, slotTimeoutMinutes: 90 }, { merge: true });
       });
 
-      set({ assignedSet: setData });
+      set({ assignedSet: { ...setData, slotIndex: assignedSetIndex } });
       return setData;
     } catch (error) {
       console.error('Failed to assign set:', error);
@@ -130,8 +217,35 @@ export const useStudyStore = create((set, get) => ({
     });
   },
 
-  // No-op: sets are now reusable, completion is tracked via sessions
-  completeSet: async () => {},
+  /** Mark the participant's set slot as Done (called from finalizeSession). */
+  completeSet: async () => {
+    const prolificId = get().participant?.prolificId;
+    const assignedSetId = get().assignedSet?.id;
+    if (!prolificId || !assignedSetId) return;
+
+    const slotsRef = doc(db, 'config', SET_SLOTS_DOC_ID);
+
+    await runTransaction(db, async (transaction) => {
+      const slotsSnap = await transaction.get(slotsRef);
+      if (!slotsSnap.exists()) return;
+
+      const slots = normalizeSlotsArray(slotsSnap.data().slots);
+      const idx = slots.findIndex((s) => s.setId === assignedSetId);
+      if (idx < 0) return;
+
+      const nextSlots = slots.map((slot, i) => {
+        if (i !== idx) return slot;
+        return {
+          setId: slot.setId,
+          status: SET_SLOT_STATUS.DONE,
+          prolificId,
+          assignedAt: slot.assignedAt,
+        };
+      });
+
+      transaction.set(slotsRef, { slots: nextSlots }, { merge: true });
+    });
+  },
 
   // ─── ACTIONS: SESSION ───
   
@@ -146,6 +260,8 @@ export const useStudyStore = create((set, get) => ({
         chartExperience,
         chartAssetFolder: getChartAssetFolder(),
         assignedSetId: assignedSet?.id || null,
+        assignedSetIndex:
+          typeof assignedSet?.slotIndex === 'number' ? assignedSet.slotIndex : null,
         assignedCharts: assignedSet?.charts || [],
         startedAt: serverTimestamp(),
         status: 'in_progress',
