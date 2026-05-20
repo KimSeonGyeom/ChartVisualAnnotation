@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
-import { generateImgExp } from './client';
+import { generateImgExp, getFirebaseStorageMediaUrl, getOriginalChartStoragePath } from './client';
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -109,19 +109,25 @@ export const processTrialAnnotation = onDocumentCreated(
         );
       }
 
+      const bucket = storage.bucket();
+      const originalChartPath = getOriginalChartStoragePath(chartAssetFolder, chartIndex);
+      const originalChartImageUrl = getFirebaseStorageMediaUrl(bucket.name, originalChartPath);
+
       const inputData = {
         chartIndex,
         caption: trialData.caption || '',
         prolificId,
         apiKey: geminiApiKey.value(),
+        originalChartImageUrl,
         workerDrawingImageUrl,
       };
 
-      console.log(`📊 Processing chart ${chartIndex} for worker ${prolificId}`);
+      console.log(
+        `📊 Processing chart ${chartIndex} for worker ${prolificId} (original: ${originalChartPath})`
+      );
 
       const { imgExpBase64 } = await generateImgExp(inputData);
 
-      const bucket = storage.bucket();
       const imgExp = await uploadImageToStorage(
         bucket,
         `${chartAssetFolder}/${prolificId}/${trialData.trialId}_imgExp.png`,

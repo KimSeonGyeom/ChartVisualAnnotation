@@ -10,7 +10,7 @@ export const CVA_TEXTBOX_DEFAULT_W = 160;
 export const CVA_TEXTBOX_DEFAULT_H = 56;
 
 export const CVA_TEXTBOX_STYLE = {
-  fontSize: 16,
+  fontSize: 18,
   fontFamily: 'system-ui, -apple-system, Segoe UI, sans-serif',
   lineHeight: 1.25,
 };
@@ -328,6 +328,20 @@ export function configureCanvasSelection(activeObject, deleteHandler) {
   } else if (isCvaAnnotation(activeObject)) {
     applyMoveOnlyDeleteControl(activeObject, deleteHandler);
   }
+}
+
+/** Select tool: end text entry if needed, then apply move/resize/delete controls to the active object. */
+export function applyActiveSelectToolState(canvas, deleteHandler) {
+  if (!canvas) return;
+
+  const active = canvas.getActiveObject();
+  if (!active) return;
+
+  if (isCvaTextbox(active) && active.isEditing) {
+    lockTextboxContent(active, canvas);
+  }
+
+  configureCanvasSelection(active, deleteHandler);
 }
 
 export function isCvaTextbox(obj) {

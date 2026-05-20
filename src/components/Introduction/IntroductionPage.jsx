@@ -89,29 +89,33 @@ export default function IntroductionPage() {
           <p className="estimated-time">
             Estimated time: ~{studyConfig.estimatedMinutes} minutes
           </p>
-          <p className="compensation">
-            Compensation: You will receive £4.00 for completing this study.
-          </p>
         </header>
 
         <form onSubmit={handleSubmit}>
           {/* Study Description */}
           <section className="study-description">
             <h2>Welcome!</h2>
-            <p>{studyConfig.description}</p>
+            <p>In this study, you will view charts with captions and add visual highlights on the chart to help others understand the caption more clearly.<br />Follow the steps below to complete the study.</p>
             
             <div className="instructions">
-              <h3>What you will do:</h3>
               <ol>
-                <li>View a chart image with a caption describing an insight</li>
-                <li>Draw visual highlights on the chart to help others understand the caption more easily</li>
+                <li>
+                  Complete a <strong>tutorial</strong> on how to use the canvas tools to draw visual highlights
+                </li>
+                <li>View a chart image with a caption and draw visual highlights on the chart</li>
                 <li>Repeat for 3 chart-caption pairs</li>
                 <li>Review and evaluate generated visual annotations for each chart</li>
               </ol>
             </div>
 
+            <p className="study-warning">
+              <strong>Important:</strong> Do not refresh or go back during the study.
+              Doing so may overwrite your existing data so the collected responses cannot be used for analysis.
+              If such behavior is detected, your pay may be refused.
+            </p>
+
             <p>
-              <strong>System Requirements:</strong> This study is designed for laptop/desktop screens (recommended width: 1200px or wider). Please adjust the zoom level so that no horizontal scrolling is needed.
+              <strong>System Requirements:</strong> This study is designed for laptop/desktop screens (recommended width: 1100px or wider). Please adjust the zoom level so that no horizontal scrolling is needed.
             </p>
           </section>
 

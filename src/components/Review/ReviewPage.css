@@ -36,19 +36,30 @@
   margin-bottom: 4rem;
 }
 
-.review-caption-info {
-  margin-bottom: 1rem;
-}
-
-.review-caption-text {
-  font-size: 1.1rem;
+.review-caption-line {
+  margin: 0;
+  padding: 0.75rem 1rem 0.5rem;
+  font-size: 1rem;
+  line-height: 1.55;
   color: #333;
-  margin: 0.4rem 0;
-  line-height: 1.6;
+  text-align: left;
 }
 
-.review-caption-text strong {
+.review-caption-line strong {
   color: #111;
+}
+
+.review-card > .review-caption-line:first-of-type {
+  padding-top: 0.85rem;
+}
+
+.review-card > .review-caption-line:nth-of-type(2) {
+  padding-top: 0.65rem;
+  padding-bottom: 0.35rem;
+}
+
+.review-pair-gate > .review-caption-line {
+  padding: 1rem 1.25rem 0.5rem;
 }
 
 /* ── 3-column card grid ────────────────────────────────── */
@@ -128,75 +139,134 @@
 
 .generation-error {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1rem;
   min-height: 200px;
-  padding: 1rem;
+  padding: 1.25rem;
   background: #fff3cd;
   border-bottom: 1px solid #ffc107;
 }
 
 .generation-error p {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #856404;
   font-weight: 600;
   margin: 0;
+  text-align: center;
+  line-height: 1.5;
+  max-width: 52rem;
 }
 
-/* ── Question blocks inside card ───────────────────────── */
-.review-card-question {
-  padding: 0.9rem 1rem;
+.review-skip-btn {
+  flex-shrink: 0;
+}
+
+.review-skipped-section {
+  padding: 1rem 1.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.review-skipped-note {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0.5rem 0 0;
+  font-weight: 500;
+  text-align: left;
+}
+
+.review-cards-container--single {
+  grid-template-columns: 1fr;
+  max-width: 640px;
+}
+
+/* ── Question groups inside card ───────────────────────── */
+.review-question-group {
+  padding: 0.85rem 1rem;
   border-top: 1px solid #eee;
 }
 
-.review-card-question.has-error {
+.review-question-group.has-error {
   background: #fef2f2;
+}
+
+.review-likert-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.review-followup-block {
+  margin-top: 0.5rem;
+  width: 100%;
 }
 
 .review-question-label {
   display: block;
-  font-size: 0.85rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #333;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.5rem;
   line-height: 1.4;
+  width: 100%;
+  text-align: center;
 }
 
 /* ── 7-point Likert ─────────────────────────────────────── */
 .review-likert-7-options {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.35rem;
   width: 100%;
-  margin-bottom: 0.25rem;
+  max-width: 100%;
+  margin-bottom: 0.2rem;
 }
 
 .review-likert-7-option {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   cursor: pointer;
   gap: 0.15rem;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  max-width: 2.75rem;
+  min-width: 0;
 }
 
 .review-likert-7-option input[type="radio"] {
   cursor: pointer;
   width: 16px;
   height: 16px;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .review-likert-num {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #444;
+  line-height: 1;
 }
 
 .review-likert-7-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.65rem;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  font-size: 0.62rem;
+  line-height: 1.15;
   color: #888;
-  margin-top: 0.15rem;
+  text-align: center;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 /* ── Text input ─────────────────────────────────────────── */

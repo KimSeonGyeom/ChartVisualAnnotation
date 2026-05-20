@@ -143,7 +143,7 @@ export default function TutorialPage() {
           <br />
           Please refer to the <strong>Drawing Tool Instructions</strong> above to understand how to use the tools.
           <br />
-          <strong>TO-DO:</strong> To show that you have understood how to use the tools, draw the visual highlights on the left chart in the same way as the example on the right.
+          <strong>Practice:</strong> To show that you have understood how to use the tools, draw the visual highlights on the left chart in the same way as the example on the right.
         </p>
 
         {saveError && <p className="error-message tutorial-save-error">{saveError}</p>}

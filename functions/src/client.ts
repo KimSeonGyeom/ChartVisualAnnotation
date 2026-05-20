@@ -1,16 +1,31 @@
 import { GoogleGenAI } from '@google/genai';
 
-/** Input for one Gemini run: worker chart image is always an http(s) URL (e.g. Firebase Storage). */
+/** Input for one Gemini run: original chart + participant drawing (http(s) URLs, e.g. Firebase Storage). */
 export interface GenerationInput {
   chartIndex: number;
   caption: string;
   prolificId: string;
   apiKey: string;
+  /** Original stimulus chart (no annotations), e.g. {folder}/originalCharts/{n}.png */
+  originalChartImageUrl: string;
+  /** Participant export: chart underlay + Fabric highlights (JPEG). */
   workerDrawingImageUrl: string;
 }
 
 interface GenerationOutput {
   imgExpBase64: string;
+}
+
+/** Storage object path for the original chart image (chart id = n in originalCharts/n.png). */
+export function getOriginalChartStoragePath(chartAssetFolder: string, chartIndex: number): string {
+  const folder = chartAssetFolder.replace(/^\/+|\/+$/g, '');
+  return `${folder}/originalCharts/${chartIndex}.png`;
+}
+
+/** Firebase Storage REST download URL (?alt=media); uses Storage rules, not GCS public ACL. */
+export function getFirebaseStorageMediaUrl(bucketName: string, objectPath: string): string {
+  const path = objectPath.replace(/^\/+/, '');
+  return `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(path)}?alt=media`;
 }
 
 function buildGeminiPrompt(
@@ -20,20 +35,30 @@ function buildGeminiPrompt(
 **Information:**
 Caption: ${input.caption}
 
+You will receive two images in order:
+- **Image 1 — Original chart:** the base chart with no participant highlights. This is the fixed chart layer.
+- **Image 2 — Participant drawing:** the same chart with the participant's rough visual highlights on top.
+
 **Task:**
-Annotate the given chart based on the caption.
-When annotating the chart, please strictly follow all the guidelines below.
+1. Compare Image 1 and Image 2. From the participant's marks, identify both:
+   - **What they are trying to express** — which data, regions, trends, comparisons, or relationships their highlights target, and how that connects to the caption.
+   - **How they are trying to express it** — the communicative role of their marks (emphasis, grouping, direction, contrast, etc.).
+2. Produce a single output image: the **original chart from Image 1** with refined visual annotations that reflect the participant's message and how they visually emphasized it, aligned with the caption.
+
+When producing the output, strictly follow all guidelines below.
 
 **Guidelines:**
-1. **No Invented Statistics:** Use only the numerical values explicitly provided in the caption or visible in the chart. Do not calculate, derive, estimate, round, convert units, compare ratios, infer rankings, or create any new numbers that are not directly stated.
+1. Use Image 1 as the exact base image. Do not resize, crop, restyle, recolor, or move any part of the original chart. Preserve the same pixel dimensions, aspect ratio, axes, labels, legends, and data marks. Only add annotations on top.
 
-2. **Avoid Clutter and Redundancy:** Each annotation must be distinct. Avoid placing multiple labels that convey the same data point or insight to keep the visual clean. Make the chart easier to read, not busier. Use visual emphasis selectively and ensure annotations do not obscure important data.
+2. Use participant's drawing(Image 2) as the guide for both what to annotate and how to annotate it. Carefully reflect what the participant highlighted and how they emphasized it. Refine appearance; do not trace Image 2 literally.
 
-3. **Improve the Visual Appearance:** Do not preserve the input drawing exactly as-is. Refine the appearance by improving styling, alignment, spacing, hierarchy, and visual polish while keeping the original chart content and meaning.
+3. Do not invent statistics. Do not add any new numeric labels, percentages, values, rankings, or quantitative claims unless they already appear verbatim in Image 1 or the caption.
 
-4. **No Text-Only Annotations:** Do not add annotations that consist only of plain text. Every text-based annotation must include a graphical cue that clearly connects the texts to the relevant part of the chart.
+4. Avoid clutter and redundancy. Each annotation should be concise and distinct. Use visual emphasis selectively and ensure annotations do not obscure important data.
 
-5. **Explore Creative Styles:** Visual annotations should explore creative visual styles while preserving the key insight. Prioritize expressive communication, and novel visual perspective even though the original chart follows a simple, basic and plain design.
+5. Keep text annotations concise. Use short, essential keywords or values. Do not use full sentences or copy the caption.
+
+6. Style visual annotations with expressive, polished styles for the highlight layer only. Leave the chart base(Image 1) as is.
 `;
 }
 
@@ -83,14 +108,19 @@ function isRetriableGeminiError(error: unknown): boolean {
   return false;
 }
 
-function assertWorkerDrawingHttpUrl(raw: string, prolificId: string, chartIndex: number): string {
+function assertHttpImageUrl(
+  raw: string,
+  label: string,
+  prolificId: string,
+  chartIndex: number
+): string {
   const url = raw.trim();
   if (!url) {
-    throw new Error(`Missing worker drawing image URL (worker=${prolificId}, chart=${chartIndex})`);
+    throw new Error(`Missing ${label} URL (worker=${prolificId}, chart=${chartIndex})`);
   }
   if (!HTTP_URL.test(url)) {
     throw new Error(
-      `workerDrawingImageUrl must be http(s) (worker=${prolificId}, chart=${chartIndex}), got: ${url.slice(0, 72)}`
+      `${label} must be http(s) (worker=${prolificId}, chart=${chartIndex}), got: ${url.slice(0, 72)}`
     );
   }
   return url;
@@ -125,8 +155,7 @@ async function fetchHttpImageAsBase64(url: string): Promise<string> {
   );
 }
 
-// Experimental annotated chart via Gemini using the participant’s drawing image URL + caption prompt.
- 
+/** Experimental annotated chart: original chart + participant drawing → refined annotation image. */
 export async function generateImgExp(
   input: GenerationInput
 ): Promise<GenerationOutput> {
@@ -134,8 +163,15 @@ export async function generateImgExp(
     throw new Error('Gemini API key not provided');
   }
 
-  const drawingUrl = assertWorkerDrawingHttpUrl(
+  const originalUrl = assertHttpImageUrl(
+    input.originalChartImageUrl,
+    'originalChartImageUrl',
+    input.prolificId,
+    input.chartIndex
+  );
+  const drawingUrl = assertHttpImageUrl(
     input.workerDrawingImageUrl,
+    'workerDrawingImageUrl',
     input.prolificId,
     input.chartIndex
   );
@@ -149,8 +185,16 @@ export async function generateImgExp(
   const prompt = buildGeminiPrompt(input);
 
   try {
+    const originalBase64 = await fetchHttpImageAsBase64(originalUrl);
     const drawingBase64 = await fetchHttpImageAsBase64(drawingUrl);
-    const imgExpBase64 = await callGeminiImageModel(ai, prompt, input, drawingBase64);
+
+    const imgExpBase64 = await callGeminiImageModel(
+      ai,
+      prompt,
+      input,
+      originalBase64,
+      drawingBase64
+    );
 
     console.log(`✅ Experimental chart generated for worker ${input.prolificId}`);
 
@@ -165,10 +209,21 @@ async function callGeminiImageModel(
   ai: GoogleGenAI,
   prompt: string,
   input: GenerationInput,
+  originalBase64: string,
   drawingBase64: string
 ): Promise<string> {
   const contents: any[] = [
     { text: prompt },
+    { text: 'Image 1 — Original chart (fixed base; do not alter underlying chart pixels):' },
+    {
+      inlineData: {
+        data: originalBase64,
+        mimeType: 'image/png',
+      },
+    },
+    {
+      text: 'Image 2 — Participant drawing (chart + rough highlights; infer what they express and how they emphasize it—not pixels to copy):',
+    },
     {
       inlineData: {
         data: drawingBase64,
@@ -181,7 +236,8 @@ async function callGeminiImageModel(
     worker: input.prolificId,
     chartIndex: input.chartIndex,
     promptLength: prompt.length,
-    inputImageChars: drawingBase64.length,
+    originalImageChars: originalBase64.length,
+    drawingImageChars: drawingBase64.length,
   });
 
   let lastError: unknown = null;

@@ -13,7 +13,7 @@
 }
 
 .progress-info {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -43,7 +43,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 1.5rem 2rem;
   gap: 1rem;
@@ -65,7 +65,7 @@
   width: 100%;
 }
 
-/* Single column: chart + caption + question + actions (use width near 1200px content area) */
+/* Single column: chart + caption + question + actions (use width near 1100px content area) */
 .chart-section {
   flex: 1 1 auto;
   width: 100%;
@@ -367,11 +367,12 @@
   height: 24px;
   border: 2px solid transparent;
   cursor: pointer;
+  box-sizing: border-box;
   transition: border-color 0.15s;
 }
 
 .color-btn.active {
-  border-color: #111;
+  border-color: #6b7280;
 }
 
 .width-options {

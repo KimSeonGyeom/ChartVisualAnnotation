@@ -5,6 +5,7 @@ import {
   CANVAS_JSON_PROPS,
   applyAnnotationObject,
   analyzeSelectionColors,
+  applyActiveSelectToolState,
   applyTextboxEditingBorder,
   applyTextboxObject,
   beginTextboxInitialEntry,
@@ -159,6 +160,11 @@ export default function ChartCanvas({
     });
 
     syncCanvasToolMode(canvas, activeTool);
+
+    if (activeTool === 'select') {
+      applyActiveSelectToolState(canvas, deleteHandlerRef.current);
+    }
+
     refreshSelectionColorSummary();
   }, [activeTool, refreshSelectionColorSummary]);
 
@@ -232,14 +238,9 @@ export default function ChartCanvas({
     const canvas = fabricRef.current;
 
     const onSelectionChange = () => {
-      const active = canvas.getActiveObject();
-      // Only lock in Select — Text tool activates the box for first-time entry.
-      if (getActiveTool() === 'select' && active?.cvaTextbox && !active.isEditing) {
-        lockTextboxContent(active, canvas);
-      }
-
       if (getActiveTool() !== 'select') return;
-      configureCanvasSelection(active, deleteHandlerRef.current);
+
+      applyActiveSelectToolState(canvas, deleteHandlerRef.current);
       refreshSelectionColorSummary();
       canvas.requestRenderAll();
     };
@@ -473,6 +474,9 @@ export default function ChartCanvas({
       }
 
       syncCanvasToolMode(canvas, getActiveTool());
+      if (getActiveTool() === 'select') {
+        applyActiveSelectToolState(canvas, deleteHandlerRef.current);
+      }
       onStrokeEnd(0, text.length);
       saveToHistoryRef.current();
       canvas.requestRenderAll();

@@ -297,6 +297,7 @@ export const useStudyStore = create((set, get) => ({
       await setDoc(doc(db, 'reviews', reviewDocId), {
         prolificId,
         trials: reviewData.trials || [],
+        skippedTrials: reviewData.skippedTrials || [],
         responses: reviewData.responses || {},
         rowOrder: reviewData.rowOrder || {},
         submittedAt: serverTimestamp(),

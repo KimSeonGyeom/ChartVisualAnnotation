@@ -13,35 +13,36 @@
       {
         "id": "understanding",
         "type": "likert",
-        "question": "This annotation helps readers understand the caption more easily.",
+        "question": "The visual highlights help readers understand the caption more easily.",
         "scale": 7,
-        "labels": ["Strongly Disagree", "", "", "Neutral", "", "", "Strongly Agree"],
+        "labels": ["Strongly Disagree", "\u200b", "\u200b", "Neutral", "\u200b", "\u200b", "Strongly Agree"],
         "required": true
       },
       {
         "id": "understanding_reason",
         "type": "text",
-        "question": "Please briefly explain your rating for the previous statement.",
-        "placeholder": "Your explanation...",
+        "question": "",
+        "placeholder": "Briefly explain your rating for the statement above.",
         "required": true,
         "maxLength": 500
       },
       {
         "id": "visual_quality",
         "type": "likert",
-        "question": "The annotation is visually polished and complete.",
+        "question": "The visual highlights look carefully drawn without making the chart feel visually busy.",
         "scale": 7,
-        "labels": ["Strongly Disagree", "", "", "Neutral", "", "", "Strongly Agree"],
+        "labels": ["Strongly Disagree", "\u200b", "\u200b", "Neutral", "\u200b", "\u200b", "Strongly Agree"],
         "required": true
       },
       {
         "id": "visual_quality_reason",
         "type": "text",
         "question": "",
-        "placeholder": "Please briefly explain your rating for the previous statement....",
+        "placeholder": "Briefly explain your rating for the statement above.",
         "required": true,
         "maxLength": 500
       }
     ]
   }
 }
+

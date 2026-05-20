@@ -199,8 +199,10 @@ export function DrawingToolInstructions() {
     <div className="canvas-instruction">
       <ul className="canvas-instruction-list">
         <li>
-          <strong>Pen:</strong> Drag to draw a line. Hold the <strong>Shift</strong> key to make straight lines.
-          Line can be either <strong>Solid</strong> or <strong>Dashed</strong>
+          <strong>Pen:</strong> Drag to draw a line. Line can be either <strong>Solid</strong> or <strong>Dashed</strong>
+        </li>
+        <li>
+          <strong>Straight Line:</strong> Hold the <strong>Shift</strong> key to draw a straight line.
         </li>
         <li>
           <strong>Rectangle:</strong> Drag on the chart to add a semi-transparent highlight over an area.

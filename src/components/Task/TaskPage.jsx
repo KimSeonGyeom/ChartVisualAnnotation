@@ -187,7 +187,7 @@ export default function TaskPage() {
               onClick={handleSubmit}
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : isLastTrial ? 'Finish Study' : 'Next Task'}
+              {isSubmitting ? 'Saving...' : isLastTrial ? 'Go to Review' : 'Next Task'}
             </button>
           </div>
         </div>
