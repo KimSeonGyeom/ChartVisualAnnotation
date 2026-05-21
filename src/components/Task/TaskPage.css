@@ -178,19 +178,26 @@
 .pen-toolbar-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
   margin-bottom: 0.5rem;
   border-bottom: 1px solid #eee;
+  width: 100%;
+  max-width: 100%;
+}
+
+.toolbar-tool-hint {
+  margin: 0;
+  padding: 0.2rem 0.1rem 0.45rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #555;
+  text-align: left;
 }
 
 .toolbar-row {
   display: flex;
   align-items: center;
   gap: 1rem;
-}
-
-.toolbar-row-main {
-  justify-content: space-between;
 }
 
 .toolbar-row-options {
@@ -400,14 +407,14 @@
   border-radius: 50%;
 }
 
-/* Caption + question: one visual block under the chart */
+/* Caption block above the chart */
 .task-copy-stack {
   flex-shrink: 0;
   width: 100%;
   border-top: 1px solid #ddd;
   border-bottom: 1px solid #eee;
   padding: 1.25rem 0 1.5rem;
-  margin-bottom: 1.25rem;
+  margin: 0 0 1.25rem;
 }
 
 .task-copy-stack > .caption-display {

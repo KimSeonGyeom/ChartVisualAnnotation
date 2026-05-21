@@ -1,47 +1,6 @@
 import { fabric } from 'fabric';
 
-export const CANVAS_JSON_PROPS = ['cvaRect', 'cvaTextbox', 'cvaBoxHeight'];
-
-export const CVA_TEXTBOX_MAX_CHARS = 16;
-export const CVA_TEXTBOX_MIN_W = 48;
-export const CVA_TEXTBOX_MIN_H = 28;
-/** Default size when placing a textbox with a single click. */
-export const CVA_TEXTBOX_DEFAULT_W = 160;
-export const CVA_TEXTBOX_DEFAULT_H = 56;
-
-export const CVA_TEXTBOX_STYLE = {
-  fontSize: 18,
-  fontFamily: 'system-ui, -apple-system, Segoe UI, sans-serif',
-  lineHeight: 1.25,
-};
-
-/** Editing outline for the text region only (not glyph stroke — Fabric uses `stroke` on text). */
-export const CVA_TEXTBOX_EDIT_BORDER = {
-  hasBorders: true,
-  borderColor: '#2563eb',
-};
-
-export const CVA_TEXTBOX_CLEAR_BORDER = {
-  hasBorders: false,
-  stroke: null,
-  strokeWidth: 0,
-};
-
-export function applyTextboxEditingBorder(obj) {
-  if (!obj?.cvaTextbox) return;
-  obj.set({
-    ...CVA_TEXTBOX_EDIT_BORDER,
-    stroke: null,
-    strokeWidth: 0,
-  });
-  obj.setCoords();
-}
-
-export function clearTextboxEditingBorder(obj) {
-  if (!obj?.cvaTextbox) return;
-  obj.set({ ...CVA_TEXTBOX_CLEAR_BORDER });
-  obj.setCoords();
-}
+export const CANVAS_JSON_PROPS = ['cvaRect'];
 
 const DELETE_CONTROL_SIZE = 20;
 
@@ -49,20 +8,6 @@ const MOVE_ONLY_PROPS = {
   hasControls: true,
   hasBorders: true,
   lockScalingX: true,
-  lockScalingY: true,
-  lockRotation: true,
-  transparentCorners: false,
-  borderColor: '#2563eb',
-  cornerColor: '#2563eb',
-  cornerStyle: 'circle',
-  padding: 4,
-};
-
-/** Edge handles resize the text region; scale is baked into width/height on modified. */
-const TEXTBOX_SELECT_PROPS = {
-  hasControls: true,
-  hasBorders: true,
-  lockScalingX: false,
   lockScalingY: true,
   lockRotation: true,
   transparentCorners: false,
@@ -177,198 +122,53 @@ export function configureActiveSelection(activeObject, deleteHandler) {
   });
 }
 
-export function createCvaTextbox({ left, top, width, height, fill }) {
-  const boxW = Math.max(CVA_TEXTBOX_MIN_W, Math.round(width));
-  const boxH = Math.max(CVA_TEXTBOX_MIN_H, Math.round(height));
-
-  return new fabric.Textbox('', {
-    left,
-    top,
-    width: boxW,
-    height: boxH,
-    fontSize: CVA_TEXTBOX_STYLE.fontSize,
-    fontFamily: CVA_TEXTBOX_STYLE.fontFamily,
-    lineHeight: CVA_TEXTBOX_STYLE.lineHeight,
-    fill,
-    editable: false,
-    splitByGrapheme: true,
-    lockScalingX: true,
-    lockScalingY: true,
-    lockRotation: true,
-    dynamicMinHeight: false,
-    backgroundColor: '',
-    cvaTextbox: true,
-    cvaBoxHeight: boxH,
-  });
-}
-
-export function applyTextboxObject(obj) {
-  if (!obj) return;
-
-  const boxH = obj.cvaBoxHeight ?? obj.height ?? CVA_TEXTBOX_MIN_H;
-
-  obj.set({
-    cvaTextbox: true,
-    cvaBoxHeight: boxH,
-    selectable: false,
-    evented: false,
-    editable: false,
-    lockRotation: true,
-    lockScalingY: true,
-    lockScalingX: true,
-    hasControls: false,
-    hasBorders: false,
-    objectCaching: false,
-    dynamicMinHeight: false,
-    backgroundColor: '',
-    fontSize: CVA_TEXTBOX_STYLE.fontSize,
-    height: boxH,
-  });
-  obj.setCoords();
-}
-
-/** Bake scale into width/height so font size stays fixed while the text region changes. */
-export function normalizeTextboxDimensions(obj) {
-  if (!obj?.cvaTextbox) return;
-
-  const sx = obj.scaleX ?? 1;
-  const sy = obj.scaleY ?? 1;
-  let w = obj.width ?? CVA_TEXTBOX_MIN_W;
-  let h = obj.cvaBoxHeight ?? obj.height ?? CVA_TEXTBOX_MIN_H;
-
-  if (Math.abs(sx - 1) > 0.001 || Math.abs(sy - 1) > 0.001) {
-    w = Math.max(CVA_TEXTBOX_MIN_W, w * sx);
-    h = Math.max(CVA_TEXTBOX_MIN_H, h * sy);
-  }
-
-  obj.set({
-    width: w,
-    height: h,
-    scaleX: 1,
-    scaleY: 1,
-    fontSize: CVA_TEXTBOX_STYLE.fontSize,
-    cvaBoxHeight: h,
-    dynamicMinHeight: false,
-    backgroundColor: '',
-  });
-  obj.setCoords();
-}
-
-export function enforceTextboxCharLimit(obj, maxChars = CVA_TEXTBOX_MAX_CHARS) {
-  if (!obj?.cvaTextbox) return false;
-  const text = obj.text ?? '';
-  if (text.length <= maxChars) return false;
-
-  obj.set({
-    text: text.slice(0, maxChars),
-    selectionStart: maxChars,
-    selectionEnd: maxChars,
-  });
-  return true;
-}
-
-/** Select mode: resize text region (width/height), not font scale. */
-export function applyTextboxSelectControls(obj, deleteHandler) {
-  if (!obj) return;
-
-  const proto = fabric.Object.prototype.controls;
-
-  obj.set({
-    ...TEXTBOX_SELECT_PROPS,
-    editable: false,
-    dynamicMinHeight: false,
-    backgroundColor: '',
-  });
-
-  obj.controls = {
-    mr: proto.mr,
-    deleteControl: buildDeleteControl(deleteHandler),
-  };
-  obj.setControlsVisibility({
-    tl: false,
-    tr: false,
-    bl: false,
-    br: false,
-    ml: false,
-    mt: false,
-    mb: false,
-    mtr: false,
-  });
-  normalizeTextboxDimensions(obj);
-}
-
-/** One-time typing right after the box is drawn; lock afterward. */
-export function beginTextboxInitialEntry(textbox, canvas) {
-  if (!textbox?.cvaTextbox || !canvas) return;
-  textbox.set({ editable: true, evented: true });
-  applyTextboxEditingBorder(textbox);
-  textbox.enterEditing();
-  textbox.selectAll?.();
-  canvas.setActiveObject(textbox);
-  canvas.requestRenderAll();
-}
-
-export function lockTextboxContent(textbox, canvas) {
-  if (!textbox?.cvaTextbox) return;
-  if (textbox.isEditing) {
-    textbox.exitEditing();
-  }
-  textbox.set({ editable: false });
-  clearTextboxEditingBorder(textbox);
-  canvas?.requestRenderAll();
-}
-
 export function configureCanvasSelection(activeObject, deleteHandler) {
   if (!activeObject) return;
 
   if (activeObject.type === 'activeSelection') {
     configureActiveSelection(activeObject, deleteHandler);
-  } else if (activeObject.cvaTextbox) {
-    applyTextboxSelectControls(activeObject, deleteHandler);
   } else if (isCvaAnnotation(activeObject)) {
     applyMoveOnlyDeleteControl(activeObject, deleteHandler);
   }
 }
 
-/** Select tool: end text entry if needed, then apply move/resize/delete controls to the active object. */
 export function applyActiveSelectToolState(canvas, deleteHandler) {
   if (!canvas) return;
 
   const active = canvas.getActiveObject();
   if (!active) return;
 
-  if (isCvaTextbox(active) && active.isEditing) {
-    lockTextboxContent(active, canvas);
-  }
-
   configureCanvasSelection(active, deleteHandler);
 }
 
-export function isCvaTextbox(obj) {
-  return !!(obj && obj.cvaTextbox);
+export function isLegacyTextboxObject(obj) {
+  return !!(obj && (obj.cvaTextbox || obj.type === 'textbox'));
 }
 
 export function isCvaAnnotation(obj) {
   if (!obj) return false;
-  return obj.type === 'path' || (obj.type === 'rect' && obj.cvaRect) || isCvaTextbox(obj);
+  return obj.type === 'path' || (obj.type === 'rect' && obj.cvaRect);
 }
 
 export function rehydrateAnnotationObject(obj, deleteHandler) {
   if (!obj) return;
-  if (isCvaTextbox(obj)) {
-    applyTextboxObject(obj);
-  } else {
-    applyAnnotationObject(obj, deleteHandler);
-  }
+  applyAnnotationObject(obj, deleteHandler);
 }
 
 export function rehydrateAnnotationObjects(canvas, deleteHandler) {
   if (!canvas) return;
+
+  const legacyTextboxes = [];
   canvas.getObjects().forEach((obj) => {
+    if (isLegacyTextboxObject(obj)) {
+      legacyTextboxes.push(obj);
+      return;
+    }
     if (isCvaAnnotation(obj)) {
       rehydrateAnnotationObject(obj, deleteHandler);
     }
   });
+  legacyTextboxes.forEach((obj) => canvas.remove(obj));
 }
 
 export function syncCanvasToolMode(canvas, activeTool) {
@@ -377,24 +177,19 @@ export function syncCanvasToolMode(canvas, activeTool) {
   const isSelect = activeTool === 'select';
   const isPen = activeTool === 'pen';
   const isRect = activeTool === 'rect';
-  const isText = activeTool === 'text';
 
   canvas.isDrawingMode = isPen;
   canvas.selection = isSelect;
-  canvas.skipTargetFind = !(isSelect || isText);
-  canvas.defaultCursor = isSelect ? 'default' : isText ? 'text' : isRect ? 'crosshair' : 'crosshair';
-  canvas.hoverCursor = isSelect ? 'move' : isText ? 'text' : 'crosshair';
+  canvas.skipTargetFind = !isSelect;
+  canvas.defaultCursor = isSelect ? 'default' : isRect ? 'crosshair' : 'crosshair';
+  canvas.hoverCursor = isSelect ? 'move' : 'crosshair';
 
   canvas.getObjects().forEach((obj) => {
     if (!isCvaAnnotation(obj)) return;
-    const isTextbox = isCvaTextbox(obj);
     obj.set({
       selectable: isSelect,
-      evented: isSelect || (isText && isTextbox),
+      evented: isSelect,
     });
-    if (isTextbox && !isSelect) {
-      obj.set({ hasControls: false, hasBorders: false });
-    }
     obj.setCoords();
   });
 
@@ -439,8 +234,6 @@ export function setAnnotationColor(obj, color) {
   if (!obj || !color) return;
   if (obj.type === 'path') {
     obj.set({ stroke: color, fill: '' });
-  } else if (obj.cvaTextbox) {
-    obj.set({ fill: color });
   } else if (obj.cvaRect) {
     obj.set({ fill: hexToRgba(color, 0.3) });
   }

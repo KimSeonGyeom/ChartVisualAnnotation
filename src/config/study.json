@@ -18,13 +18,13 @@
     "allowPenCustomization": true,
     "penDefaults": {
       "color": "#000000",
-      "width": 2,
+      "width": 3,
       "lineStyle": "solid"
     },
-    "penDashPattern": [8, 5],
+    "penDashPattern": [12, 8],
     "penOptions": {
       "colors": ["#000000", "#e69f00", "#56b4e9"],
-      "widths": [2]
+      "widths": [3]
     }
   }
 }

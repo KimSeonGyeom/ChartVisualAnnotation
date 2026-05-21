@@ -1,36 +1,45 @@
 .tutorial-page {
   min-height: 100vh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 1.25rem 1rem;
+  background: #fafafa;
 }
 
-.tutorial-container {
-  max-width: 1100px;
-  width: 100%;
-  padding: 0;
+.tutorial-header {
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  padding: 2rem 1rem 1.5rem;
+  text-align: center;
 }
 
 .tutorial-title {
-  font-size: 2.05rem;
+  font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 0.85rem;
+  margin: 0 0 0.5rem 0;
   color: #111;
   line-height: 1.2;
+}
+
+.tutorial-subtitle {
+  font-size: 1rem;
+  color: #666;
+  margin: 0 auto;
+  line-height: 1.5;
+  max-width: 720px;
+}
+
+.tutorial-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tutorial-desc {
   font-size: 1.25rem;
   line-height: 1.5;
   color: #333;
-  margin-bottom: 0.65rem;
-  max-width: none;
-}
-
-.tutorial-visual-emphasis {
-  padding-left: 1.25rem;
-  margin: 0.85rem 0 1rem 0;
+  margin: 1.25rem 0 0.65rem;
+  max-width: 900px;
 }
 
 .tutorial-section-label {
@@ -42,37 +51,15 @@
   margin: 0 0 0.55rem 0;
 }
 
-.tutorial-images-section {
-  margin: 0 0 1rem 0;
-}
-
-/* Toolbar row; row 2 = same height L/R, captions share one baseline at bottom */
 .tutorial-comparison {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto;
-  gap: 0.35rem 1.25rem;
+  gap: 1.25rem;
   align-items: stretch;
   width: 100%;
 }
 
-.tutorial-comparison-toolbar {
-  grid-column: 1;
-  grid-row: 1;
-  min-width: 0;
-  align-self: start;
-}
-
-.tutorial-comparison-spacer {
-  grid-column: 2;
-  grid-row: 1;
-  min-width: 0;
-  align-self: start;
-}
-
-.tutorial-comparison-canvas {
-  grid-column: 1;
-  grid-row: 2;
+.tutorial-comparison-practice {
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -81,13 +68,11 @@
 }
 
 .tutorial-comparison-sample {
-  grid-column: 2;
-  grid-row: 2;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  align-self: stretch;
+  align-self: end;
 }
 
 .tutorial-comparison .tutorial-image-label {
@@ -123,10 +108,11 @@
   line-height: 1.25;
 }
 
-/* Caption text matches task page; no scroll box (TaskPage .caption-display is global) */
 .tutorial-caption-panel {
-  margin: 0 0 1rem 0;
-  padding: 0;
+  margin: 0 0 1.25rem;
+  padding: 1.25rem 0 1.5rem;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #eee;
   max-height: none;
   overflow: visible;
 }
@@ -152,28 +138,12 @@
   margin-top: 1.1rem;
 }
 
+.tutorial-save-error {
+  margin-top: 0.75rem;
+}
+
 @media (max-width: 900px) {
   .tutorial-comparison {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-  }
-
-  .tutorial-comparison-toolbar {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .tutorial-comparison-spacer {
-    display: none;
-  }
-
-  .tutorial-comparison-canvas {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .tutorial-comparison-sample {
-    grid-column: 1;
-    grid-row: 3;
   }
 }

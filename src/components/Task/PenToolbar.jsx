@@ -14,7 +14,7 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
   } = useDrawingStore();
 
   const { penOptions } = studyConfig.features;
-  const colorTools = ['pen', 'rect', 'text', 'select'];
+  const colorTools = ['pen', 'rect', 'select'];
   const showColors = colorTools.includes(activeTool);
 
   const isChipActive = (paletteColor) => {
@@ -29,7 +29,6 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
 
   return (
     <div className="pen-toolbar-wrapper">
-      {/* Row 1: Actions */}
       <div className="toolbar-row toolbar-row-main">
         <div className="toolbar-section">
           <div className="tool-options toolbar-mode-select">
@@ -109,17 +108,6 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
             </button>
             <button
               type="button"
-              className={`tool-btn ${activeTool === 'text' ? 'active' : ''}`}
-              onClick={() => setActiveTool('text')}
-              title="Text box"
-              aria-label="Text box"
-            >
-              <span className="tool-btn-letter" aria-hidden>
-                T
-              </span>
-            </button>
-            <button
-              type="button"
               className={`tool-btn ${activeTool === 'select' ? 'active' : ''}`}
               onClick={() => setActiveTool('select')}
               title="Select and move"
@@ -189,37 +177,39 @@ export default function PenToolbar({ onUndo, onRedo, onClear }) {
           </button>
         </div>
       </div>
+      <ActiveToolInstruction
+        activeTool={activeTool}
+        penLineStyle={penLineStyle}
+        showColorHint={allowCustomization && showColors}
+      />
     </div>
   );
 }
 
-/** Instruction copy for these drawing tools + ChartCanvas; same module as PenToolbar. */
-export function DrawingToolInstructions() {
+function ActiveToolInstruction({ activeTool, penLineStyle, showColorHint }) {
+  const text = getActiveToolInstructionText(activeTool, penLineStyle, showColorHint);
+  if (!text) return null;
+
   return (
-    <div className="canvas-instruction">
-      <ul className="canvas-instruction-list">
-        <li>
-          <strong>Pen:</strong> Drag to draw a line. Line can be either <strong>Solid</strong> or <strong>Dashed</strong>
-        </li>
-        <li>
-          <strong>Straight Line:</strong> Hold the <strong>Shift</strong> key to draw a straight line.
-        </li>
-        <li>
-          <strong>Rectangle:</strong> Drag on the chart to add a semi-transparent highlight over an area.
-        </li>
-        <li>
-          <strong>Text:</strong> Click on the chart to place a text box (max <strong>16</strong> characters).
-        </li>
-        <li>
-          <strong>Select:</strong> Click to select items (hold <strong>Shift</strong> to select multiple). Drag to move. Click the <strong>×</strong> at the top-right corner to remove.
-        </li>
-        <li>
-          <strong>Color:</strong> Set color for pen, rectangle, and text. In <strong>Select</strong>, pick a color to recolor the selected item(s).
-        </li>
-        <li>
-          <strong>Undo / Redo / Clear All</strong>
-        </li>
-      </ul>
-    </div>
+    <p className="toolbar-tool-hint" role="status" aria-live="polite">
+      {text}
+    </p>
   );
+}
+
+function getActiveToolInstructionText(activeTool, penLineStyle, showColorHint) {
+  const colorSuffix = showColorHint ? ' Pick a color.' : '';
+
+  switch (activeTool) {
+    case 'pen':
+      return `Drag to draw a ${penLineStyle === 'dashed' ? 'dashed' : 'solid'} line. Hold Shift for a straight line.${colorSuffix}`;
+    case 'rect':
+      return `Drag to add a semi-transparent highlight over an area.${colorSuffix}`;
+    case 'select':
+      return `Click to select (hold Shift for multiple). Drag to move. Click × on a selection to delete.${
+        showColorHint ? ' Pick a color to recolor selected items.' : ''
+      }`;
+    default:
+      return null;
+  }
 }

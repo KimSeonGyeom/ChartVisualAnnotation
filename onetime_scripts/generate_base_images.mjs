@@ -9,7 +9,7 @@
  *
  * Usage:
  *   CHART_ASSET_FOLDER=pilot_v3 node onetime_scripts/generate_base_images.mjs
- *   CHART_IDS=2,4 node onetime_scripts/generate_base_images.mjs   # optional subset by chart id
+ *   Edit TARGET below to regenerate a subset (null = all charts).
  *
  * GEMINI_API_KEY: .env at project root or env var.
  */
@@ -69,6 +69,8 @@ When drawing the annotations, strictly follow all guidelines below.
 }
 
 const CHART_ASSET_FOLDER = process.env.CHART_ASSET_FOLDER || 'pilot_v3';
+/** Chart ids to regenerate; set to null to process all charts in caption.json */
+const TARGET = [2, 3, 4];
 const IMAGE_DIR = path.join(ROOT, 'public', CHART_ASSET_FOLDER);
 const CAPTION_FILE = path.join(ROOT, 'public', CHART_ASSET_FOLDER, 'caption.json');
 const OUTPUT_DIR = path.join(ROOT, 'public', CHART_ASSET_FOLDER, 'baseImages');
@@ -79,20 +81,6 @@ function captionsForEntry(entry) {
   if (Array.isArray(raw)) return raw.filter((c) => typeof c === 'string' && c.trim());
   if (typeof raw === 'string' && raw.trim()) return [raw.trim()];
   return [];
-}
-
-// Optional filter: CHART_IDS=2,4,6
-function parseChartIdFilter() {
-  const raw = process.env.CHART_IDS;
-  if (!raw?.trim()) return null;
-  return new Set(
-    raw
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map(Number)
-      .filter((n) => Number.isFinite(n))
-  );
 }
 
 const RETRY_DELAYS_MS = [0, 2000, 5000];
@@ -148,11 +136,10 @@ async function main() {
     process.exit(1);
   }
 
-  const idFilter = parseChartIdFilter();
+  const targetSet = Array.isArray(TARGET) && TARGET.length > 0 ? new Set(TARGET) : null;
 
-  // @type {typeof captionData}
-  const entries = idFilter
-    ? captionData.filter((e) => idFilter.has(e.id))
+  const entries = targetSet
+    ? captionData.filter((e) => targetSet.has(e.id))
     : captionData.slice();
 
   const totalJobs = entries.length;

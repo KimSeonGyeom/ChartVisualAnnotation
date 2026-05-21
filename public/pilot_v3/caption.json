@@ -7,17 +7,17 @@
   {
     "id": 2,
     "filename": "2.png",
-    "captions": "The highest annual growth in the number of researchers per 1,000 people in the EAP was recorded between 2000 and 2001."
+    "captions": "The growth in Korea's total researcher population closely mirrors the rise in researchers per 1,000 economically active people."
   },
   {
     "id": 3,
     "filename": "3.png",
-    "captions": "Oil showed the biggest decrease in electricity generation, which fell from 20.9% in 1971 to 5.6% in 2007."
+    "captions": "Coal and peat stayed in the top position, but the rankings of other energy sources changed between 1971 and 2007."
   },
   {
     "id": 4,
     "filename": "4.png",
-    "captions": "The enrollment rates of all age groups were higher than 50 percent in 2006."
+    "captions": "School enrollment remained consistently high for ages 5–17, while enrollment has increased among both younger children and older teenagers."
   },
   {
     "id": 5,
@@ -27,7 +27,7 @@
   {
     "id": 6,
     "filename": "6.png",
-    "captions": "The percentage of women employed as writers on the top 100 U.S. films increased by 4 percentage points from 2020 to 2021 and by 1 percentage point from 2021 to 2022."
+    "captions": "Editors had the second-highest percentage of women across all three years."
   },
   {
     "id": 7,
@@ -42,6 +42,6 @@
   {
     "id": 9,
     "filename": "9.png",
-    "captions": "The United States recycled or composted about a quarter of its total solid waste, but Sweden recycled or composted half of its total solid waste."
+    "captions": "Different countries dominate each waste management category, with landfilling being most prominent in the United States, energy from waste in Sweden, and recycling in Austria."
   }
 ]

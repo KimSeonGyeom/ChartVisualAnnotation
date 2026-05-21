@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export const useDrawingStore = create((set, get) => ({
   // ==================== TOOL STATE ====================
-  // 'pen' | 'rect' | 'text' | 'select'
+  // 'pen' | 'rect' | 'select'
   activeTool: 'pen',
 
   // ==================== CONFIG ====================
@@ -13,7 +13,7 @@ export const useDrawingStore = create((set, get) => ({
   /** 'solid' | 'dashed' — freehand pen only */
   penLineStyle: 'solid',
   /** Dash gap pattern [dash, gap, ...] for fabric.Path.strokeDashArray */
-  penDashPattern: [8, 5],
+  penDashPattern: [12, 8],
   allowCustomization: true,
 
   /** Select mode: chip highlight when all selected annotations share one palette color. */

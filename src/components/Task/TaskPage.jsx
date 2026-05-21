@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStudyStore } from '../../stores/useStudyStore';
 import { useDrawingStore } from '../../stores/useDrawingStore';
 import ChartCanvas from './ChartCanvas';
-import PenToolbar, { DrawingToolInstructions } from './PenToolbar';
+import PenToolbar from './PenToolbar';
 import studyConfig from '../../config/study.json';
 import './TaskPage.css';
 
@@ -143,13 +143,22 @@ export default function TaskPage() {
       <main className="task-content">
         <div className="task-instruction-row">
           <p className="canvas-instruction-main">
-            Read the caption below and draw visual highlights on the chart to help others understand the caption in a clear, friendly way.
+            Read the caption above and draw visual highlights on the chart to help others understand the caption in a clear, friendly way.
           </p>
         </div>
 
         <div className="task-main-row">
           <div className="chart-section">
-            <DrawingToolInstructions />
+            <div className="task-copy-stack">
+              <div className="caption-display">
+                <h2>Caption</h2>
+                <p className="caption-paragraph">
+                  <span className="caption-sentence caption-sentence--highlight">
+                    {currentStimulus.caption}
+                  </span>
+                </p>
+              </div>
+            </div>
             <div className="canvas-wrapper">
               <PenToolbar
                 onUndo={() => canvasActionsRef.current?.undo()}
@@ -163,16 +172,6 @@ export default function TaskPage() {
                 height={TASK_CHART_DISPLAY_HEIGHT}
                 onCanvasReady={handleCanvasReady}
               />
-            </div>
-            <div className="task-copy-stack">
-              <div className="caption-display">
-                <h2>Caption</h2>
-                <p className="caption-paragraph">
-                  <span className="caption-sentence caption-sentence--highlight">
-                    {currentStimulus.caption}
-                  </span>
-                </p>
-              </div>
             </div>
 
             {error && (

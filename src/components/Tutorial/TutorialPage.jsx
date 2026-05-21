@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ChartCanvas from '../Task/ChartCanvas';
-import PenToolbar, { DrawingToolInstructions } from '../Task/PenToolbar';
+import PenToolbar from '../Task/PenToolbar';
 import studyConfig from '../../config/study.json';
 import { useDrawingStore } from '../../stores/useDrawingStore';
 import { useStudyStore, getChartAssetFolder } from '../../stores/useStudyStore';
@@ -44,9 +44,9 @@ export default function TutorialPage() {
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
-      setPracticeCanvasSize({ 
-        width: PRACTICE_DISPLAY_MAX_W, 
-        height: Math.round((img.naturalHeight / img.naturalWidth) * PRACTICE_DISPLAY_MAX_W) 
+      setPracticeCanvasSize({
+        width: PRACTICE_DISPLAY_MAX_W,
+        height: Math.round((img.naturalHeight / img.naturalWidth) * PRACTICE_DISPLAY_MAX_W),
       });
     };
     img.src = PRACTICE_CHART_URL;
@@ -93,58 +93,63 @@ export default function TutorialPage() {
 
   return (
     <div className="tutorial-page">
-      <div className="tutorial-container">
+      <header className="tutorial-header">
         <h1 className="tutorial-title">Tutorial and Practice</h1>
-        <div className="tutorial-visual-emphasis">
-          <div className="tutorial-images-section">
-            <h2 className="tutorial-section-label">Drawing Tool Instructions</h2>
-            <DrawingToolInstructions />
+        <p className="tutorial-subtitle">
+          Learn the drawing tools, then practice on the chart using the caption below.
+        </p>
+      </header>
 
-            <div className="tutorial-comparison">
-              <div className="tutorial-comparison-toolbar">
-                <div className="canvas-wrapper tutorial-practice-canvas-wrap">
-                  <PenToolbar
-                    onUndo={() => canvasActionsRef.current?.undo()}
-                    onRedo={() => canvasActionsRef.current?.redo()}
-                    onClear={() => canvasActionsRef.current?.clear()}
-                  />
-                </div>
-              </div>
-              <div className="tutorial-comparison-spacer" aria-hidden="true" />
-              <div className="tutorial-comparison-canvas">
-                <ChartCanvas
-                  key="tutorial-practice-canvas"
-                  imageUrl={PRACTICE_CHART_URL}
-                  width={practiceCanvasSize.width}
-                  height={practiceCanvasSize.height}
-                  onCanvasReady={handleCanvasReady}
-                />
-                <p className="tutorial-image-label">
-                  <strong>Left: practice canvas</strong>
-                </p>
-              </div>
-              <div className="tutorial-comparison-sample">
-                <img src={`/${chartFolder}/tutorial_example.png`} alt="Chart with example visual highlights" />
-                <p className="tutorial-image-label">
-                  <strong>Right: example highlights based on the caption</strong>
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="tutorial-caption-panel">
-            <h2 className="tutorial-section-label">Caption</h2>
-            <p className="caption-paragraph">
-              <span className="caption-sentence caption-sentence--highlight">The percentage of people in the 18-29 group who said they had read a print book was 74%, which was the highest among the four groups.</span>
-            </p>
-          </div>
-        </div>
+      <main className="tutorial-content">
         <p className="tutorial-desc">
           Your goal is to draw <strong>visual highlights</strong> on the <strong>chart</strong> to help others understand the caption in a more friendly and clear way.
           <br />
-          Please refer to the <strong>Drawing Tool Instructions</strong> above to understand how to use the tools.
-          <br />
-          <strong>Practice:</strong> To show that you have understood how to use the tools, draw the visual highlights on the left chart in the same way as the example on the right.
+          <strong>To-Do:</strong> To show that you have understood how to use the tools, draw the
+          visual highlights on the canvas in exactly the same way as the example. <strong>You will not be paid</strong> if you do not complete this To-Do.
         </p>
+        
+        <div className="tutorial-caption-panel">
+          <h2 className="tutorial-section-label">Caption</h2>
+          <p className="caption-paragraph">
+            <span className="caption-sentence caption-sentence--highlight">
+              The percentage of people in the 18-29 group who said they had read a print book was
+              74%, which was the highest among the four groups.
+            </span>
+          </p>
+        </div>
+
+        <div className="tutorial-comparison">
+          <div className="tutorial-comparison-practice">
+            <div className="canvas-wrapper tutorial-practice-canvas-wrap">
+              <PenToolbar
+                onUndo={() => canvasActionsRef.current?.undo()}
+                onRedo={() => canvasActionsRef.current?.redo()}
+                onClear={() => canvasActionsRef.current?.clear()}
+              />
+              <ChartCanvas
+                key="tutorial-practice-canvas"
+                imageUrl={PRACTICE_CHART_URL}
+                width={practiceCanvasSize.width}
+                height={practiceCanvasSize.height}
+                onCanvasReady={handleCanvasReady}
+              />
+            </div>
+            <p className="tutorial-image-label">
+              <strong>Practice canvas</strong>
+            </p>
+          </div>
+          <div className="tutorial-comparison-sample">
+            <img
+              src={`/${chartFolder}/tutorial_example.png`}
+              alt="Chart with example visual highlights"
+            />
+            <p className="tutorial-image-label">
+              <strong>Example highlights</strong>
+            </p>
+          </div>
+        </div>
+
+        
 
         {saveError && <p className="error-message tutorial-save-error">{saveError}</p>}
 
@@ -156,7 +161,7 @@ export default function TutorialPage() {
         >
           {isSaving ? 'Saving…' : 'Start Task'}
         </button>
-      </div>
+      </main>
     </div>
   );
 }
